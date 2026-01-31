@@ -5,10 +5,10 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from japan_fiscal_simulator.core.model import VARIABLE_INDICES, N_VARIABLES, N_SHOCKS, SHOCK_VARS
+from japan_fiscal_simulator.core.model import N_SHOCKS, N_VARIABLES, SHOCK_VARS, VARIABLE_INDICES
 
 if TYPE_CHECKING:
-    from japan_fiscal_simulator.core.model import DSGEModel, PolicyFunctionResult
+    from japan_fiscal_simulator.core.model import DSGEModel
 
 
 @dataclass
@@ -82,7 +82,7 @@ class ImpulseResponseSimulator:
             x_history[0] = policy.Q[:, :N_SHOCKS] @ epsilon
         else:
             # Qの次元が足りない場合
-            x_history[0, :policy.Q.shape[0]] = policy.Q @ epsilon[:policy.Q.shape[1]]
+            x_history[0, : policy.Q.shape[0]] = policy.Q @ epsilon[: policy.Q.shape[1]]
 
         # 時間発展: x_t = P * x_{t-1}
         P = policy.P
@@ -173,9 +173,7 @@ class FiscalMultiplierCalculator:
         self.model = model
         self.simulator = ImpulseResponseSimulator(model)
 
-    def compute_spending_multiplier(
-        self, horizon: int = 40
-    ) -> FiscalMultiplierResult:
+    def compute_spending_multiplier(self, horizon: int = 40) -> FiscalMultiplierResult:
         """政府支出乗数を計算"""
         result = self.simulator.simulate_government_spending(
             spending_increase=0.01, periods=horizon
@@ -191,9 +189,7 @@ class FiscalMultiplierCalculator:
 
     def compute_tax_multiplier(self, horizon: int = 40) -> FiscalMultiplierResult:
         """消費税乗数を計算（減税の効果）"""
-        result = self.simulator.simulate_consumption_tax_cut(
-            tax_cut=0.01, periods=horizon
-        )
+        result = self.simulator.simulate_consumption_tax_cut(tax_cut=0.01, periods=horizon)
 
         y_response = result.get_response("y")
         tau_response = result.get_response("tau_c")

@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from japan_fiscal_simulator.core.nk_model import NewKeynesianModel, NKSolutionResult
+from japan_fiscal_simulator.core.nk_model import NewKeynesianModel
 from japan_fiscal_simulator.core.steady_state import SteadyState, SteadyStateSolver
 
 if TYPE_CHECKING:
@@ -153,7 +153,11 @@ class DSGEModel:
 
         # 派生変数の計算
         # 消費: c = y - g (簡略化された財市場均衡)
-        c_y_ratio = 1 - gov.g_y_ratio - firm.delta * firm.alpha / (1 / self.params.household.beta - 1 + firm.delta)
+        c_y_ratio = (
+            1
+            - gov.g_y_ratio
+            - firm.delta * firm.alpha / (1 / self.params.household.beta - 1 + firm.delta)
+        )
         P[idx["c"], idx["y"]] = c_y_ratio
         P[idx["c"], idx["g"]] = -gov.g_y_ratio
 

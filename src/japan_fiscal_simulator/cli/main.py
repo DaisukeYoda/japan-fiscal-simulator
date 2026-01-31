@@ -2,17 +2,17 @@
 
 import asyncio
 from pathlib import Path
-from typing import Annotated, Optional
+from typing import Annotated
 
 import typer
 from rich.console import Console
 
 from japan_fiscal_simulator.cli.commands import (
-    simulate_command,
     multiplier_command,
-    steady_state_command,
     parameters_command,
     report_command,
+    simulate_command,
+    steady_state_command,
 )
 
 app = typer.Typer(
@@ -27,9 +27,7 @@ console = Console()
 def simulate(
     policy_type: Annotated[
         str,
-        typer.Argument(
-            help="政策タイプ: consumption_tax, government_spending, transfer, monetary"
-        ),
+        typer.Argument(help="政策タイプ: consumption_tax, government_spending, transfer, monetary"),
     ],
     shock: Annotated[
         float,
@@ -44,7 +42,7 @@ def simulate(
         typer.Option("--graph", "-g", help="グラフを生成"),
     ] = False,
     output_dir: Annotated[
-        Optional[Path],
+        Path | None,
         typer.Option("--output", "-o", help="出力ディレクトリ"),
     ] = None,
 ) -> None:
@@ -92,7 +90,7 @@ def parameters() -> None:
 @app.command("report")
 def report(
     output_file: Annotated[
-        Optional[Path],
+        Path | None,
         typer.Option("--output", "-o", help="出力ファイル"),
     ] = None,
 ) -> None:

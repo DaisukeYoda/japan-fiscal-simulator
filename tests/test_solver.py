@@ -1,12 +1,11 @@
 """Blanchard-Kahnソルバーのテスト"""
 
-import pytest
 import numpy as np
 
 from japan_fiscal_simulator.core.solver import (
-    BlanchardKahnSolver,
-    BlanchardKahnResult,
     BlanchardKahnError,
+    BlanchardKahnResult,
+    BlanchardKahnSolver,
     check_blanchard_kahn,
 )
 

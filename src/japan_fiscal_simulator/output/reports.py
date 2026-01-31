@@ -4,10 +4,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from jinja2 import Environment, BaseLoader
+from jinja2 import BaseLoader, Environment
 
 if TYPE_CHECKING:
-    from japan_fiscal_simulator.output.schemas import SimulationResult, ComparisonResult
+    from japan_fiscal_simulator.output.schemas import ComparisonResult, SimulationResult
 
 
 # レポートテンプレート（Markdown）
@@ -183,7 +183,9 @@ class ReportGenerator:
         scenario = result.scenario
         summary_parts = []
 
-        summary_parts.append(f"本レポートは「{scenario.name}」政策のマクロ経済効果を分析しています。")
+        summary_parts.append(
+            f"本レポートは「{scenario.name}」政策のマクロ経済効果を分析しています。"
+        )
 
         # 主要な効果を記述
         if result.fiscal_multiplier:

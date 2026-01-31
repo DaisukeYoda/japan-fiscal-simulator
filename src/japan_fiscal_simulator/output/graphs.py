@@ -3,8 +3,8 @@
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-import matplotlib.pyplot as plt
 import matplotlib
+import matplotlib.pyplot as plt
 import numpy as np
 
 if TYPE_CHECKING:
@@ -143,7 +143,7 @@ class GraphGenerator:
             axes[row, col].set_visible(False)
 
         if title is None:
-            title = f"インパルス応答: {result.shock_name} ショック ({result.shock_size*100:.1f}%)"
+            title = f"インパルス応答: {result.shock_name} ショック ({result.shock_size * 100:.1f}%)"
         fig.suptitle(title, fontsize=14, fontweight="bold")
         plt.tight_layout()
 
@@ -180,11 +180,11 @@ class GraphGenerator:
         fig, ax = plt.subplots(figsize=(10, 6))
 
         if labels is None:
-            labels = [f"シナリオ {i+1}" for i in range(len(results))]
+            labels = [f"シナリオ {i + 1}" for i in range(len(results))]
 
         colors = plt.cm.tab10(np.linspace(0, 1, len(results)))
 
-        for idx, (result, label) in enumerate(zip(results, labels)):
+        for idx, (result, label) in enumerate(zip(results, labels, strict=True)):
             response = result.get_response(variable)
             time_axis = np.arange(result.periods)
             ax.plot(time_axis, response * 100, label=label, color=colors[idx], linewidth=2)

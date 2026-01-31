@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 if TYPE_CHECKING:
-    from japan_fiscal_simulator.parameters.defaults import HouseholdParameters, GovernmentParameters
+    from japan_fiscal_simulator.parameters.defaults import GovernmentParameters, HouseholdParameters
 
 
 @dataclass
@@ -33,9 +33,7 @@ class HouseholdSector:
     2. 労働供給方程式
     """
 
-    def __init__(
-        self, params: "HouseholdParameters", gov_params: "GovernmentParameters"
-    ) -> None:
+    def __init__(self, params: "HouseholdParameters", gov_params: "GovernmentParameters") -> None:
         self.beta = params.beta
         self.sigma = params.sigma
         self.phi = params.phi
@@ -44,9 +42,7 @@ class HouseholdSector:
         self.tau_c = gov_params.tau_c
         self.tau_l = gov_params.tau_l
 
-    def compute_steady_state(
-        self, real_wage: float, real_rate: float
-    ) -> HouseholdSteadyState:
+    def compute_steady_state(self, real_wage: float, real_rate: float) -> HouseholdSteadyState:
         """定常状態を計算
 
         Args:
@@ -67,9 +63,7 @@ class HouseholdSector:
         consumption = income * 0.7 / (1 + self.tau_c)  # 消費性向0.7と仮定
 
         # 限界効用
-        marginal_utility = (1 + self.tau_c) * (
-            (consumption * (1 - self.habit)) ** (-self.sigma)
-        )
+        marginal_utility = (1 + self.tau_c) * ((consumption * (1 - self.habit)) ** (-self.sigma))
 
         return HouseholdSteadyState(
             consumption=consumption, labor=labor, marginal_utility=marginal_utility

@@ -1,28 +1,28 @@
 """MCPツール定義"""
 
+import time
 from datetime import datetime
 from typing import Any
-import time
 
-from japan_fiscal_simulator.core.model import DSGEModel, VARIABLE_INDICES
+from japan_fiscal_simulator.core.model import DSGEModel
 from japan_fiscal_simulator.core.simulation import (
-    ImpulseResponseSimulator,
     FiscalMultiplierCalculator,
+    ImpulseResponseSimulator,
 )
-from japan_fiscal_simulator.parameters.calibration import JapanCalibration
 from japan_fiscal_simulator.output.schemas import (
+    ComparisonResult,
+    FiscalMultiplier,
+    ImpulseResponse,
+    ParameterSet,
     PolicyScenario,
     PolicyType,
+    ScenarioComparison,
     ShockType,
     SimulationResult,
-    ParameterSet,
     SteadyStateValues,
-    ImpulseResponse,
     VariableTimeSeries,
-    FiscalMultiplier,
-    ComparisonResult,
-    ScenarioComparison,
 )
+from japan_fiscal_simulator.parameters.calibration import JapanCalibration
 
 
 class SimulationContext:
@@ -125,7 +125,7 @@ def simulate_policy(
     # シナリオ作成
     scenario = PolicyScenario(
         name=scenario_name or f"{policy_type}_{shock_size}",
-        description=f"{policy_type}政策シミュレーション（ショック: {shock_size*100:.1f}%）",
+        description=f"{policy_type}政策シミュレーション（ショック: {shock_size * 100:.1f}%）",
         policy_type=PolicyType(policy_type),
         shock_type=ShockType(shock_type),
         shock_size=shock_size,
@@ -245,9 +245,7 @@ def set_parameters(
         ctx.calibration = ctx.calibration.set_consumption_tax(consumption_tax_rate)
 
     if government_spending_ratio is not None:
-        ctx.calibration = ctx.calibration.set_government_spending_ratio(
-            government_spending_ratio
-        )
+        ctx.calibration = ctx.calibration.set_government_spending_ratio(government_spending_ratio)
 
     ctx.reset_model()
 
@@ -308,7 +306,6 @@ def compare_scenarios(
     Returns:
         比較結果
     """
-    ctx = get_context()
     comparisons = []
 
     for scenario_def in scenarios:
@@ -326,9 +323,7 @@ def compare_scenarios(
         b_final = irf["b"]["values"][-1] if irf["b"]["values"] else 0
 
         fiscal_mult = (
-            result["fiscal_multiplier"]["impact_multiplier"]
-            if result["fiscal_multiplier"]
-            else 0
+            result["fiscal_multiplier"]["impact_multiplier"] if result["fiscal_multiplier"] else 0
         )
 
         comparisons.append(

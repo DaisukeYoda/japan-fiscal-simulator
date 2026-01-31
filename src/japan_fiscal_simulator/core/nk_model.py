@@ -168,11 +168,7 @@ class NewKeynesianModel:
         # IS曲線に代入して y を解く
         # y = ρ_g * y - σ^{-1}[(φ_π + φ_y) * y * pi_y_ratio_g / y - ρ_g * pi_y_ratio_g * y] + g_y * g
         # y * (1 - ρ_g + σ^{-1} * (φ_π - ρ_g) * pi_y_ratio_g + σ^{-1} * φ_y) = g_y * g
-        coef_y_g = (
-            1 - rho_g
-            + (1 / sigma) * (phi_pi - rho_g) * pi_y_ratio_g
-            + (1 / sigma) * phi_y
-        )
+        coef_y_g = 1 - rho_g + (1 / sigma) * (phi_pi - rho_g) * pi_y_ratio_g + (1 / sigma) * phi_y
 
         psi_yg = g_y / coef_y_g if abs(coef_y_g) > 1e-10 else 0.0
         psi_pig = pi_y_ratio_g * psi_yg
@@ -182,11 +178,7 @@ class NewKeynesianModel:
         denom_pc_a = 1 - beta * rho_a
         pi_y_ratio_a = kappa / denom_pc_a if abs(denom_pc_a) > 1e-10 else 0.0
 
-        coef_y_a = (
-            1 - rho_a
-            + (1 / sigma) * (phi_pi - rho_a) * pi_y_ratio_a
-            + (1 / sigma) * phi_y
-        )
+        coef_y_a = 1 - rho_a + (1 / sigma) * (phi_pi - rho_a) * pi_y_ratio_a + (1 / sigma) * phi_y
 
         psi_ya = 1.0 / coef_y_a if abs(coef_y_a) > 1e-10 else 0.0
         psi_pia = pi_y_ratio_a * psi_ya
@@ -226,23 +218,25 @@ class NewKeynesianModel:
         Q[1, 1] = 1.0  # e_a -> a
 
         # R: 制御変数の状態依存
-        R = np.array([
-            [psi_yg, psi_ya],   # y = ψ_yg * g + ψ_ya * a
-            [psi_pig, psi_pia], # π = ψ_πg * g + ψ_πa * a
-            [psi_rg, psi_ra],   # r = ψ_rg * g + ψ_ra * a
-        ])
+        R = np.array(
+            [
+                [psi_yg, psi_ya],  # y = ψ_yg * g + ψ_ya * a
+                [psi_pig, psi_pia],  # π = ψ_πg * g + ψ_πa * a
+                [psi_rg, psi_ra],  # r = ψ_rg * g + ψ_ra * a
+            ]
+        )
 
         # S: 制御変数へのショック直接効果
         S = np.zeros((n_control, n_shock))
-        S[0, 0] = psi_yg   # y への e_g 効果
-        S[0, 1] = psi_ya   # y への e_a 効果
-        S[0, 2] = psi_ym   # y への e_m 効果
+        S[0, 0] = psi_yg  # y への e_g 効果
+        S[0, 1] = psi_ya  # y への e_a 効果
+        S[0, 2] = psi_ym  # y への e_m 効果
         S[1, 0] = psi_pig  # π への e_g 効果
         S[1, 1] = psi_pia  # π への e_a 効果
         S[1, 2] = psi_pim  # π への e_m 効果
-        S[2, 0] = psi_rg   # r への e_g 効果
-        S[2, 1] = psi_ra   # r への e_a 効果
-        S[2, 2] = psi_rm   # r への e_m 効果
+        S[2, 0] = psi_rg  # r への e_g 効果
+        S[2, 1] = psi_ra  # r への e_a 効果
+        S[2, 2] = psi_rm  # r への e_m 効果
 
         return NKSolutionResult(
             P=P,

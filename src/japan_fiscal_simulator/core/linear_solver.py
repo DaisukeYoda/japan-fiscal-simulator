@@ -97,16 +97,16 @@ class LinearRESolver:
         # 安定な固有値（|λ| < 1）を左上に並べる
         try:
             S, T, alpha, beta, Q, Z = ordqz(
-                Gamma0, Gamma1, sort="iuc"  # inside unit circle
+                Gamma0,
+                Gamma1,
+                sort="iuc",  # inside unit circle
             )
         except Exception as e:
             return self._failure_result(f"QZ分解失敗: {e}")
 
         # 固有値を計算
         with np.errstate(divide="ignore", invalid="ignore"):
-            eigenvalues = np.where(
-                np.abs(beta) > tol, alpha / beta, np.inf * np.sign(alpha)
-            )
+            eigenvalues = np.where(np.abs(beta) > tol, alpha / beta, np.inf * np.sign(alpha))
 
         # 安定・不安定固有値のカウント
         n_stable = np.sum(np.abs(eigenvalues) < 1.0 - tol)
@@ -126,7 +126,6 @@ class LinearRESolver:
         ns = int(n_stable)
 
         Z11 = Z[:n, :ns]  # y_t の安定部分
-        Z21 = Z[n:, :ns]  # E[y_{t+1}] の安定部分
 
         # さらに状態・制御で分割
         # Z11 = [[Z11_s], [Z11_c]] (状態変数、制御変数)

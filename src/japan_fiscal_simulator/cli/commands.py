@@ -1,19 +1,22 @@
 """CLIコマンド実装"""
 
 from pathlib import Path
-from typing import Annotated, Optional
+from typing import Annotated
 
 import typer
 from rich.console import Console
-from rich.table import Table
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.table import Table
 
 from japan_fiscal_simulator.core.model import DSGEModel
-from japan_fiscal_simulator.core.simulation import ImpulseResponseSimulator, FiscalMultiplierCalculator
-from japan_fiscal_simulator.parameters.calibration import JapanCalibration
+from japan_fiscal_simulator.core.simulation import (
+    FiscalMultiplierCalculator,
+    ImpulseResponseSimulator,
+)
 from japan_fiscal_simulator.output.graphs import GraphGenerator
 from japan_fiscal_simulator.output.reports import ReportGenerator
+from japan_fiscal_simulator.parameters.calibration import JapanCalibration
 
 console = Console()
 
@@ -21,9 +24,7 @@ console = Console()
 def simulate_command(
     policy_type: Annotated[
         str,
-        typer.Argument(
-            help="政策タイプ: consumption_tax, government_spending, transfer, monetary"
-        ),
+        typer.Argument(help="政策タイプ: consumption_tax, government_spending, transfer, monetary"),
     ],
     shock: Annotated[
         float,
@@ -38,7 +39,7 @@ def simulate_command(
         typer.Option("--graph", "-g", help="グラフを生成"),
     ] = False,
     output_dir: Annotated[
-        Optional[Path],
+        Path | None,
         typer.Option("--output", "-o", help="出力ディレクトリ"),
     ] = None,
 ) -> None:
@@ -92,7 +93,6 @@ def simulate_command(
     table.add_column("ピーク時期", style="yellow")
 
     for var in ["y", "c", "i", "pi", "r", "b"]:
-        response = result.get_response(var)
         peak_period, peak_value = result.peak_response(var)
         var_names = {
             "y": "産出（Y）",
@@ -114,7 +114,7 @@ def simulate_command(
     if graph:
         out_dir = output_dir or Path("./output")
         graph_gen = GraphGenerator(out_dir / "graphs")
-        fig = graph_gen.plot_impulse_response(result, show=False)
+        graph_gen.plot_impulse_response(result, show=False)
         save_path = out_dir / "graphs" / f"irf_{policy_type}.png"
         console.print(f"\n[green]グラフを保存しました: {save_path}[/green]")
 
@@ -274,7 +274,7 @@ def parameters_command() -> None:
 
 def report_command(
     output_file: Annotated[
-        Optional[Path],
+        Path | None,
         typer.Option("--output", "-o", help="出力ファイル"),
     ] = None,
 ) -> None:
@@ -284,7 +284,9 @@ def report_command(
     ctx = get_context()
 
     if ctx.latest_result is None:
-        console.print("[yellow]シミュレーション結果がありません。先にsimulateコマンドを実行してください。[/yellow]")
+        console.print(
+            "[yellow]シミュレーション結果がありません。先にsimulateコマンドを実行してください。[/yellow]"
+        )
         raise typer.Exit(1)
 
     generator = ReportGenerator()

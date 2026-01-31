@@ -7,8 +7,8 @@ import numpy as np
 from scipy.optimize import fsolve
 
 from japan_fiscal_simulator.parameters.constants import (
-    SteadyStateConstants,
     SolverConstants,
+    SteadyStateConstants,
 )
 
 if TYPE_CHECKING:
@@ -234,14 +234,16 @@ class SteadyStateSolver:
             return np.array([res1, res2, res3, res4, res5, res6])
 
         # 初期値
-        x0 = np.array([
-            SOLVER_CONST.initial_output,
-            SOLVER_CONST.initial_consumption,
-            SOLVER_CONST.initial_labor,
-            SOLVER_CONST.initial_capital,
-            SOLVER_CONST.initial_wage,
-            SOLVER_CONST.initial_interest_rate,
-        ])
+        x0 = np.array(
+            [
+                SOLVER_CONST.initial_output,
+                SOLVER_CONST.initial_consumption,
+                SOLVER_CONST.initial_labor,
+                SOLVER_CONST.initial_capital,
+                SOLVER_CONST.initial_wage,
+                SOLVER_CONST.initial_interest_rate,
+            ]
+        )
 
         solution, info, ier, mesg = fsolve(residuals, x0, full_output=True)
 

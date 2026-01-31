@@ -5,7 +5,7 @@ from enum import Enum
 from typing import Any
 
 import numpy as np
-from pydantic import BaseModel, Field, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class PolicyType(str, Enum):

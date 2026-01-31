@@ -74,9 +74,7 @@ class CentralBankSector:
         """ZLB制約を適用"""
         return max(nominal_rate, self.r_lower_bound)
 
-    def zlb_adjusted_coefficients(
-        self, is_zlb_binding: bool
-    ) -> dict[str, float]:
+    def zlb_adjusted_coefficients(self, is_zlb_binding: bool) -> dict[str, float]:
         """ZLB考慮した係数
 
         ZLBが拘束的な場合、金利は外生的に下限に固定

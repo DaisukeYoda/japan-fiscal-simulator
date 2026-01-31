@@ -7,7 +7,7 @@ import numpy as np
 from scipy.linalg import ordqz
 
 if TYPE_CHECKING:
-    from japan_fiscal_simulator.core.steady_state import SteadyState
+    pass
 
 
 @dataclass
@@ -100,7 +100,7 @@ class BlanchardKahnSolver:
         try:
             S, T, alpha, beta, Q, Z = ordqz(G, F, sort="ouc")  # outside unit circle
         except Exception as e:
-            raise BlanchardKahnError(f"QZ分解に失敗: {e}")
+            raise BlanchardKahnError(f"QZ分解に失敗: {e}") from e
 
         # 固有値の計算
         with np.errstate(divide="ignore", invalid="ignore"):
@@ -151,13 +151,7 @@ class BlanchardKahnSolver:
 
         # Zを分割
         Z11 = Z[:n, :n_stable]
-        Z12 = Z[:n, n_stable:]
         Z21 = Z[n:, :n_stable]
-        Z22 = Z[n:, n_stable:]
-
-        # S, Tの安定ブロック
-        S11 = S[:n_stable, :n_stable]
-        T11 = T[:n_stable, :n_stable]
 
         # 政策関数 P の計算
         # x_t = Z21 * Z11^{-1} * x_{t-1} (状態変数部分)
@@ -175,7 +169,11 @@ class BlanchardKahnSolver:
             # 単純化: D行列の効果を直接使用
             # より厳密な計算は (A - B*P)^{-1} * D を使用
             impact_matrix = self.A - self.B @ P[:n, :n] if P.shape[0] >= n else self.A
-            Q_mat = np.linalg.solve(impact_matrix[:n, :n], self.D) if impact_matrix.shape[0] >= n else self.D
+            Q_mat = (
+                np.linalg.solve(impact_matrix[:n, :n], self.D)
+                if impact_matrix.shape[0] >= n
+                else self.D
+            )
         except (np.linalg.LinAlgError, ValueError):
             Q_mat = self.D
 

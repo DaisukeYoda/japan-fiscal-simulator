@@ -88,9 +88,7 @@ class FirmSector:
         kappa_base = (1 - self.theta) * (1 - beta * self.theta) / self.theta
 
         # 戦略的補完性の調整
-        strategic_comp = (1 - self.alpha) / (
-            1 - self.alpha + self.alpha * self.epsilon
-        )
+        strategic_comp = (1 - self.alpha) / (1 - self.alpha + self.alpha * self.epsilon)
         kappa = kappa_base * strategic_comp
 
         return {

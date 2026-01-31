@@ -109,8 +109,6 @@ class GovernmentSector:
         c = consumption_ss
         g = ss.spending
         tr = ss.transfers
-        b = ss.debt
-        tax = ss.tax_revenue
 
         # 各項目のGDP比
         return {
@@ -192,7 +190,9 @@ class GovernmentSector:
         # 予算制約 (row 2): 簡略化版
         # b̂_t = (1/β)*b̂_{t-1} + (g/y)*ĝ_t - (τc*c/y)*(τ̂_c + ĉ_t)
         budget = self.budget_constraint_coefficients(
-            ss, output_ss, output_ss * 0.6  # C/Y ≈ 0.6
+            ss,
+            output_ss,
+            output_ss * 0.6,  # C/Y ≈ 0.6
         )
         A[2, b_idx] = 1.0
         A[2, g_idx] = -budget["spending"]

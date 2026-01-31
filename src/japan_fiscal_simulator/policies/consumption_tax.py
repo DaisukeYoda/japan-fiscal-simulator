@@ -97,7 +97,6 @@ class ConsumptionTaxPolicy:
         # 税収への影響（簡易計算）
         # dTax/Tax ≈ dτ/τ + dC/C
         tau_response = irf.get_response("tau_c")
-        tau_c = self.model.params.government.tau_c
         revenue_impact = tau_response[0] + c_response[0]
 
         # 厚生効果の近似（消費等価変化）

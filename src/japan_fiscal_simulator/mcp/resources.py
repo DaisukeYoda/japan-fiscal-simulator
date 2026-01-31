@@ -9,13 +9,13 @@ from japan_fiscal_simulator.policies.consumption_tax import (
     SCENARIO_TAX_INCREASE_2PCT,
 )
 from japan_fiscal_simulator.policies.social_security import (
-    SCENARIO_TRANSFER_INCREASE,
     SCENARIO_PENSION_CUT,
+    SCENARIO_TRANSFER_INCREASE,
 )
 from japan_fiscal_simulator.policies.subsidies import (
-    SCENARIO_INVESTMENT_SUBSIDY,
     SCENARIO_EMPLOYMENT_SUBSIDY,
     SCENARIO_GREEN_SUBSIDY,
+    SCENARIO_INVESTMENT_SUBSIDY,
 )
 
 
@@ -190,10 +190,7 @@ def get_latest_results() -> dict[str, Any]:
         "available": True,
         "scenario": result.scenario.model_dump(),
         "summary": {
-            "output_peak_effect": max(
-                result.impulse_response.variables["y"].values, key=abs
-            )
-            * 100
+            "output_peak_effect": max(result.impulse_response.variables["y"].values, key=abs) * 100
             if "y" in result.impulse_response.variables
             else None,
             "fiscal_multiplier": result.fiscal_multiplier.impact_multiplier

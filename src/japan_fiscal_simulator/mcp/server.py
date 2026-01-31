@@ -6,25 +6,24 @@ from typing import Any
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import (
-    Tool,
-    TextContent,
     Resource,
-    ResourceTemplate,
+    TextContent,
+    Tool,
 )
 
-from japan_fiscal_simulator.mcp.tools import (
-    simulate_policy,
-    set_parameters,
-    get_fiscal_multiplier,
-    compare_scenarios,
-    generate_report,
-)
 from japan_fiscal_simulator.mcp.resources import (
     get_current_parameters,
-    get_steady_state,
-    get_scenarios_list,
     get_latest_results,
     get_results_history,
+    get_scenarios_list,
+    get_steady_state,
+)
+from japan_fiscal_simulator.mcp.tools import (
+    compare_scenarios,
+    generate_report,
+    get_fiscal_multiplier,
+    set_parameters,
+    simulate_policy,
 )
 
 
@@ -187,7 +186,11 @@ def create_server() -> Server:
             else:
                 result = {"error": f"Unknown tool: {name}"}
 
-            return [TextContent(type="text", text=json.dumps(result, ensure_ascii=False, indent=2, default=str))]
+            return [
+                TextContent(
+                    type="text", text=json.dumps(result, ensure_ascii=False, indent=2, default=str)
+                )
+            ]
         except Exception as e:
             return [TextContent(type="text", text=json.dumps({"error": str(e)}))]
 

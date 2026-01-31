@@ -1,0 +1,67 @@
+[project]
+name = "jpfs"
+version = "0.1.0"
+description = "Japan Fiscal Simulator - New Keynesian DSGEモデルによる財政政策分析"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "Japan Fiscal Team"}
+]
+keywords = ["dsge", "fiscal-policy", "economics", "japan", "simulation"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "numpy>=1.24.0",
+    "scipy>=1.10.0",
+    "pydantic>=2.0.0",
+    "mcp>=1.0.0",
+    "typer>=0.9.0",
+    "rich>=13.0.0",
+    "matplotlib>=3.7.0",
+    "jinja2>=3.1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "mypy>=1.0.0",
+    "ruff>=0.1.0",
+]
+
+[project.scripts]
+jpfs = "japan_fiscal.cli.main:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/japan_fiscal"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+
+[dependency-groups]
+dev = [
+    "mypy>=1.19.1",
+    "pytest>=9.0.2",
+    "pytest-cov>=7.0.0",
+    "ruff>=0.14.14",
+]

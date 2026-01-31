@@ -1,0 +1,62 @@
+{
+  "name": "Japan Baseline Calibration",
+  "description": "日本経済向けベースラインキャリブレーション（2024年基準）",
+  "parameters": {
+    "household": {
+      "beta": 0.999,
+      "sigma": 1.5,
+      "phi": 2.0,
+      "habit": 0.7,
+      "chi": 1.0
+    },
+    "firm": {
+      "alpha": 0.33,
+      "delta": 0.025,
+      "theta": 0.75,
+      "epsilon": 6.0,
+      "psi": 0.5
+    },
+    "government": {
+      "tau_c": 0.10,
+      "tau_l": 0.25,
+      "tau_k": 0.30,
+      "g_y_ratio": 0.20,
+      "b_y_ratio": 2.00,
+      "transfer_y_ratio": 0.15,
+      "rho_g": 0.90,
+      "rho_tau": 0.90,
+      "phi_b": 0.02
+    },
+    "central_bank": {
+      "rho_r": 0.85,
+      "phi_pi": 1.5,
+      "phi_y": 0.125,
+      "pi_target": 0.005,
+      "r_lower_bound": -0.001
+    },
+    "financial": {
+      "chi_b": 0.05,
+      "leverage_ss": 2.0,
+      "survival_rate": 0.975
+    },
+    "shocks": {
+      "rho_a": 0.90,
+      "rho_g": 0.90,
+      "rho_tau_c": 0.95,
+      "rho_m": 0.50,
+      "rho_risk": 0.75,
+      "sigma_a": 0.01,
+      "sigma_g": 0.01,
+      "sigma_tau_c": 0.005,
+      "sigma_m": 0.0025,
+      "sigma_risk": 0.01
+    }
+  },
+  "notes": {
+    "beta": "低金利環境を反映した高い割引率",
+    "b_y_ratio": "日本の高い政府債務水準（GDP比200%）",
+    "tau_c": "現行消費税率10%",
+    "r_lower_bound": "マイナス金利政策を反映",
+    "habit": "高い習慣形成パラメータ（消費の平滑化）"
+  }
+}

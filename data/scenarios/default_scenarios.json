@@ -1,0 +1,49 @@
+{
+  "scenarios": [
+    {
+      "id": "consumption_tax_cut_2pct",
+      "name": "消費税2%pt減税",
+      "description": "消費税率を10%から8%に引き下げる政策",
+      "policy_type": "consumption_tax",
+      "shock_size": -0.02,
+      "shock_type": "temporary",
+      "periods": 40
+    },
+    {
+      "id": "consumption_tax_cut_5pct",
+      "name": "消費税5%pt減税",
+      "description": "消費税率を10%から5%に引き下げる政策",
+      "policy_type": "consumption_tax",
+      "shock_size": -0.05,
+      "shock_type": "temporary",
+      "periods": 40
+    },
+    {
+      "id": "government_spending_1pct",
+      "name": "政府支出GDP比1%増",
+      "description": "政府支出をGDP比1%増加させる政策",
+      "policy_type": "government_spending",
+      "shock_size": 0.01,
+      "shock_type": "temporary",
+      "periods": 40
+    },
+    {
+      "id": "transfer_increase",
+      "name": "社会保障給付増額",
+      "description": "移転支払いをGDP比1%増加させる政策",
+      "policy_type": "transfer",
+      "shock_size": 0.01,
+      "shock_type": "temporary",
+      "periods": 40
+    },
+    {
+      "id": "investment_subsidy",
+      "name": "投資補助金",
+      "description": "投資補助金をGDP比1%実施",
+      "policy_type": "subsidy",
+      "shock_size": 0.01,
+      "shock_type": "temporary",
+      "periods": 40
+    }
+  ]
+}

@@ -3,7 +3,7 @@
 import pytest
 import numpy as np
 
-from japan_fiscal.core.solver import (
+from japan_fiscal_simulator.core.solver import (
     BlanchardKahnSolver,
     BlanchardKahnResult,
     BlanchardKahnError,

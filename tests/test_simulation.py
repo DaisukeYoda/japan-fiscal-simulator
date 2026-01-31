@@ -3,14 +3,14 @@
 import pytest
 import numpy as np
 
-from japan_fiscal.core.model import DSGEModel
-from japan_fiscal.core.simulation import (
+from japan_fiscal_simulator.core.model import DSGEModel
+from japan_fiscal_simulator.core.simulation import (
     ImpulseResponseSimulator,
     ImpulseResponseResult,
     FiscalMultiplierCalculator,
 )
-from japan_fiscal.parameters.defaults import DefaultParameters
-from japan_fiscal.parameters.calibration import JapanCalibration
+from japan_fiscal_simulator.parameters.defaults import DefaultParameters
+from japan_fiscal_simulator.parameters.calibration import JapanCalibration
 
 
 class TestImpulseResponseSimulator:

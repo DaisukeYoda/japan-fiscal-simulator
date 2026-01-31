@@ -2,9 +2,9 @@
 
 import pytest
 
-from japan_fiscal.core.model import DSGEModel, VARIABLE_INDICES, N_VARIABLES
-from japan_fiscal.parameters.defaults import DefaultParameters
-from japan_fiscal.parameters.calibration import JapanCalibration
+from japan_fiscal_simulator.core.model import DSGEModel, VARIABLE_INDICES, N_VARIABLES
+from japan_fiscal_simulator.parameters.defaults import DefaultParameters
+from japan_fiscal_simulator.parameters.calibration import JapanCalibration
 
 
 class TestDSGEModel:

@@ -1,5 +1,9 @@
 # jpfs - Japan Fiscal Simulator
 
+[![PyPI version](https://badge.fury.io/py/jpfs.svg)](https://pypi.org/project/jpfs/)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 消費税減税・社会保障費増額・補助金政策などの財政政策が日本経済に与える影響をシミュレートするツール。中規模New Keynesian DSGEモデルをPythonでフルスクラッチ実装。
 
 ## 特徴
@@ -13,7 +17,13 @@
 ## インストール
 
 ```bash
-pip install -e .
+pip install jpfs
+```
+
+または
+
+```bash
+uvx jpfs --help
 ```
 
 ## 使用方法
@@ -40,13 +50,11 @@ jpfs mcp
 ### Pythonからの使用
 
 ```python
-from japan_fiscal.core.model import DSGEModel
-from japan_fiscal.core.simulation import ImpulseResponseSimulator
-from japan_fiscal.parameters.calibration import JapanCalibration
+import japan_fiscal_simulator as jpfs
 
 # モデル初期化
-calibration = JapanCalibration.create()
-model = DSGEModel(calibration.parameters)
+calibration = jpfs.JapanCalibration.create()
+model = jpfs.DSGEModel(calibration.parameters)
 
 # 定常状態
 ss = model.steady_state
@@ -54,7 +62,7 @@ print(f"産出: {ss.output:.4f}")
 print(f"消費: {ss.consumption:.4f}")
 
 # シミュレーション
-simulator = ImpulseResponseSimulator(model)
+simulator = jpfs.ImpulseResponseSimulator(model)
 result = simulator.simulate_consumption_tax_cut(tax_cut=0.02, periods=40)
 
 # 結果

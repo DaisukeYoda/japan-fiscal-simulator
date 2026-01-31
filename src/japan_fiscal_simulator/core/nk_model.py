@@ -10,6 +10,19 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
+from japan_fiscal_simulator.core.equation_system import EquationSystem, SystemMatrices
+from japan_fiscal_simulator.core.equations import (
+    GovernmentSpendingProcess,
+    ISCurve,
+    ISCurveParameters,
+    PhillipsCurve,
+    PhillipsCurveParameters,
+    TaylorRule,
+    TaylorRuleParameters,
+    TechnologyProcess,
+    check_taylor_principle,
+    compute_phillips_slope,
+)
 from japan_fiscal_simulator.core.steady_state import SteadyState, SteadyStateSolver
 
 if TYPE_CHECKING:
@@ -117,6 +130,30 @@ class NewKeynesianModel:
             self._solution = self._solve_reduced_form()
         return self._solution
 
+    def _create_equations(
+        self,
+    ) -> tuple[
+        GovernmentSpendingProcess,
+        TechnologyProcess,
+        ISCurve,
+        PhillipsCurve,
+        TaylorRule,
+    ]:
+        """方程式オブジェクトを作成"""
+        hh = self.params.household
+        firm = self.params.firm
+        gov = self.params.government
+        cb = self.params.central_bank
+        shocks = self.params.shocks
+
+        g_process = GovernmentSpendingProcess(rho_g=shocks.rho_g)
+        a_process = TechnologyProcess(rho_a=shocks.rho_a)
+        is_curve = ISCurve(ISCurveParameters(sigma=hh.sigma, g_y=gov.g_y_ratio))
+        phillips = PhillipsCurve(PhillipsCurveParameters(beta=hh.beta, theta=firm.theta))
+        taylor = TaylorRule(TaylorRuleParameters(phi_pi=cb.phi_pi, phi_y=cb.phi_y))
+
+        return g_process, a_process, is_curve, phillips, taylor
+
     def _solve_reduced_form(self) -> NKSolutionResult:
         """縮約形で解く
 
@@ -138,23 +175,18 @@ class NewKeynesianModel:
         # パラメータ
         beta = hh.beta
         sigma = hh.sigma
-        theta = firm.theta
         g_y = gov.g_y_ratio
         phi_pi = cb.phi_pi
         phi_y = cb.phi_y
         rho_g = shocks.rho_g
         rho_a = shocks.rho_a
 
-        # Phillips曲線スロープ
-        kappa = (1 - theta) * (1 - beta * theta) / theta
+        # Phillips曲線スロープ（方程式モジュールを使用）
+        kappa = compute_phillips_slope(beta, firm.theta)
 
         # Taylor原則のチェック
-        # 安定性条件: φ_π + (1-β)/κ * φ_y > 1
-        taylor_criterion = phi_pi + (1 - beta) / kappa * phi_y
-        if taylor_criterion <= 1:
-            determinacy = "indeterminate"
-        else:
-            determinacy = "determinate"
+        is_determinate, taylor_criterion = check_taylor_principle(phi_pi, phi_y, beta, kappa)
+        determinacy = "determinate" if is_determinate else "indeterminate"
 
         # === 政府支出ショックへの応答係数 ===
         # IS: y = ρ_g * y - σ^{-1}[(φ_π*π + φ_y*y) - ρ_g*π] + g_y * g
@@ -166,7 +198,6 @@ class NewKeynesianModel:
         pi_y_ratio_g = kappa / denom_pc_g if abs(denom_pc_g) > 1e-10 else 0.0
 
         # IS曲線に代入して y を解く
-        # y = ρ_g * y - σ^{-1}[(φ_π + φ_y) * y * pi_y_ratio_g / y - ρ_g * pi_y_ratio_g * y] + g_y * g
         # y * (1 - ρ_g + σ^{-1} * (φ_π - ρ_g) * pi_y_ratio_g + σ^{-1} * φ_y) = g_y * g
         coef_y_g = 1 - rho_g + (1 / sigma) * (phi_pi - rho_g) * pi_y_ratio_g + (1 / sigma) * phi_y
 
@@ -248,86 +279,25 @@ class NewKeynesianModel:
             message=f"縮約形解法で解を取得 (Taylor criterion = {taylor_criterion:.3f})",
         )
 
-    def _build_system_matrices(self) -> tuple[np.ndarray, ...]:
+    def _build_system_matrices(self) -> SystemMatrices:
         """システム行列を構築
 
         モデル形式: A @ E[y_{t+1}] + B @ y_t + C @ y_{t-1} + D @ ε_t = 0
 
         y_t = [g_t, a_t, y_t, π_t, r_t]  (状態 + 制御)
         """
-        hh = self.params.household
-        firm = self.params.firm
-        gov = self.params.government
-        cb = self.params.central_bank
-        shocks = self.params.shocks
+        g_process, a_process, is_curve, phillips, taylor = self._create_equations()
 
-        n = self.vars.n_total
-        m = self.vars.n_shock
-        idx = self.vars.index
-        sidx = self.vars.shock_index
+        equation_system = EquationSystem()
+        equations = [
+            g_process.coefficients(),
+            a_process.coefficients(),
+            is_curve.coefficients(),
+            phillips.coefficients(),
+            taylor.coefficients(),
+        ]
 
-        # パラメータ
-        beta = hh.beta
-        sigma = hh.sigma
-        theta = firm.theta
-        epsilon = firm.epsilon
-        g_y = gov.g_y_ratio
-        phi_pi = cb.phi_pi
-        phi_y = cb.phi_y
-        rho_g = shocks.rho_g
-        rho_a = shocks.rho_a
-
-        # Phillips曲線スロープ
-        kappa = (1 - theta) * (1 - beta * theta) / theta * (sigma + (1 + epsilon) / epsilon)
-        # 簡略化されたkappa
-        kappa = (1 - theta) * (1 - beta * theta) / theta
-
-        # 行列初期化
-        A = np.zeros((n, n))  # E[y_{t+1}]
-        B = np.zeros((n, n))  # y_t
-        C = np.zeros((n, n))  # y_{t-1}
-        D = np.zeros((n, m))  # ε_t
-
-        # --- 方程式 0: 政府支出 AR(1) ---
-        # g_t - ρ_g * g_{t-1} - e_g = 0
-        row = 0
-        B[row, idx("g")] = 1.0
-        C[row, idx("g")] = -rho_g
-        D[row, sidx("e_g")] = -1.0
-
-        # --- 方程式 1: 技術 AR(1) ---
-        # a_t - ρ_a * a_{t-1} - e_a = 0
-        row = 1
-        B[row, idx("a")] = 1.0
-        C[row, idx("a")] = -rho_a
-        D[row, sidx("e_a")] = -1.0
-
-        # --- 方程式 2: IS曲線 ---
-        # y_t - E[y_{t+1}] + σ^{-1}(r_t - E[π_{t+1}]) - g_y * g_t - a_t = 0
-        row = 2
-        B[row, idx("y")] = 1.0
-        B[row, idx("r")] = 1.0 / sigma
-        B[row, idx("g")] = -g_y  # 政府支出の直接効果
-        B[row, idx("a")] = -1.0  # 技術の直接効果
-        A[row, idx("y")] = -1.0
-        A[row, idx("pi")] = -1.0 / sigma
-
-        # --- 方程式 3: Phillips曲線 ---
-        # π_t - β * E[π_{t+1}] - κ * y_t = 0
-        row = 3
-        B[row, idx("pi")] = 1.0
-        B[row, idx("y")] = -kappa
-        A[row, idx("pi")] = -beta
-
-        # --- 方程式 4: Taylor則 ---
-        # r_t - φ_π * π_t - φ_y * y_t - e_m = 0
-        row = 4
-        B[row, idx("r")] = 1.0
-        B[row, idx("pi")] = -phi_pi
-        B[row, idx("y")] = -phi_y
-        D[row, sidx("e_m")] = -1.0
-
-        return A, B, C, D
+        return equation_system.build_matrices(equations)
 
     def impulse_response(
         self,

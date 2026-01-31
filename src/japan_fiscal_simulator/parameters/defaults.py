@@ -1,6 +1,6 @@
 """DSGEモデルのデフォルトパラメータ定義"""
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Self
 
 
@@ -93,8 +93,6 @@ class DefaultParameters:
 
     def with_updates(self, **kwargs: dict) -> Self:
         """パラメータの一部を更新した新しいインスタンスを返す"""
-        from dataclasses import replace
-
         return replace(self, **kwargs)
 
 

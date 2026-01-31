@@ -7,6 +7,7 @@ from typing import Annotated
 import typer
 from rich.console import Console
 
+from japan_fiscal_simulator import __version__
 from japan_fiscal_simulator.cli.commands import (
     multiplier_command,
     parameters_command,
@@ -14,6 +15,7 @@ from japan_fiscal_simulator.cli.commands import (
     simulate_command,
     steady_state_command,
 )
+from japan_fiscal_simulator.mcp.server import run_server
 
 app = typer.Typer(
     name="japan-fiscal",
@@ -101,8 +103,6 @@ def report(
 @app.command("mcp")
 def mcp_server() -> None:
     """MCPサーバーを起動"""
-    from japan_fiscal_simulator.mcp.server import run_server
-
     console.print("[bold]Japan Fiscal DSGE MCP Server[/bold]")
     console.print("MCPサーバーを起動しています...")
 
@@ -112,8 +112,6 @@ def mcp_server() -> None:
 @app.command("version")
 def version() -> None:
     """バージョン情報を表示"""
-    from japan_fiscal_simulator import __version__
-
     console.print(f"japan-fiscal version {__version__}")
 
 

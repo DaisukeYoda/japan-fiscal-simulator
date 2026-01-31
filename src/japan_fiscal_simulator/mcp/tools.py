@@ -9,6 +9,7 @@ from japan_fiscal_simulator.core.simulation import (
     FiscalMultiplierCalculator,
     ImpulseResponseSimulator,
 )
+from japan_fiscal_simulator.output.reports import ReportGenerator
 from japan_fiscal_simulator.output.schemas import (
     ComparisonResult,
     FiscalMultiplier,
@@ -405,8 +406,6 @@ def generate_report(
 
     if ctx.latest_result is None:
         return {"error": "No simulation results available. Run simulate_policy first."}
-
-    from japan_fiscal_simulator.output.reports import ReportGenerator
 
     generator = ReportGenerator()
     report = generator.generate_simulation_report(ctx.latest_result)

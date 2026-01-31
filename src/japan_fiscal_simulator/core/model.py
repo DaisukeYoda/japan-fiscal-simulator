@@ -9,12 +9,9 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
+from japan_fiscal_simulator.core.derived_coefficients import DerivedCoefficients
 from japan_fiscal_simulator.core.nk_model import NewKeynesianModel
 from japan_fiscal_simulator.core.steady_state import SteadyState, SteadyStateSolver
-from japan_fiscal_simulator.parameters.constants import (
-    IMPULSE_COEFFICIENTS,
-    TRANSITION_COEFFICIENTS,
-)
 
 if TYPE_CHECKING:
     from japan_fiscal_simulator.parameters.defaults import DefaultParameters
@@ -85,6 +82,7 @@ class DSGEModel:
         self._steady_state: SteadyState | None = None
         self._policy_result: PolicyFunctionResult | None = None
         self._nk_model: NewKeynesianModel | None = None
+        self._derived_coefficients: DerivedCoefficients | None = None
 
     @property
     def nk_model(self) -> NewKeynesianModel:
@@ -92,6 +90,13 @@ class DSGEModel:
         if self._nk_model is None:
             self._nk_model = NewKeynesianModel(self.params)
         return self._nk_model
+
+    @property
+    def derived_coefficients(self) -> DerivedCoefficients:
+        """導出係数"""
+        if self._derived_coefficients is None:
+            self._derived_coefficients = DerivedCoefficients(self.params)
+        return self._derived_coefficients
 
     @property
     def steady_state(self) -> SteadyState:
@@ -120,6 +125,10 @@ class DSGEModel:
         gov = self.params.government
         cb = self.params.central_bank
         shocks = self.params.shocks
+
+        # 導出係数を取得
+        imp = self.derived_coefficients.compute_impulse_coefficients()
+        trans = self.derived_coefficients.compute_transition_coefficients()
 
         n = N_VARIABLES
         idx = VARIABLE_INDICES
@@ -165,8 +174,8 @@ class DSGEModel:
         P[idx["c"], idx["y"]] = c_y_ratio
         P[idx["c"], idx["g"]] = -gov.g_y_ratio
 
-        # 投資: 加速度効果
-        P[idx["i"], idx["y"]] = TRANSITION_COEFFICIENTS.investment_accelerator
+        # 投資: 加速度効果（導出係数を使用）
+        P[idx["i"], idx["y"]] = trans.investment_accelerator
 
         # 労働: 生産関数から (N = Y / A * K^(-α))
         P[idx["n"], idx["y"]] = 1.0 / (1 - firm.alpha)
@@ -182,8 +191,8 @@ class DSGEModel:
         P[idx["k"], idx["k"]] = 1 - firm.delta
         P[idx["k"], idx["i"]] = firm.delta
 
-        # 政府債務: 財政ルール
-        P[idx["b"], idx["b"]] = TRANSITION_COEFFICIENTS.debt_persistence
+        # 政府債務: 財政ルール（導出係数を使用）
+        P[idx["b"], idx["b"]] = trans.debt_persistence
         P[idx["b"], idx["g"]] = gov.g_y_ratio
 
         # 消費税率: 外生
@@ -203,7 +212,7 @@ class DSGEModel:
         Q[idx["R"], 0] = S[2, 1]
         Q[idx["r"], 0] = S[2, 1] - S[1, 1]  # R - π
         Q[idx["c"], 0] = S[0, 1] * c_y_ratio
-        Q[idx["i"], 0] = S[0, 1] * IMPULSE_COEFFICIENTS.technology_investment_share
+        Q[idx["i"], 0] = S[0, 1] * imp.technology_investment_share
         Q[idx["n"], 0] = S[0, 1] / (1 - firm.alpha) - 1.0  # 技術上昇で労働減少
         Q[idx["w"], 0] = S[0, 1] - Q[idx["n"], 0]
 
@@ -214,7 +223,7 @@ class DSGEModel:
         Q[idx["R"], 1] = S[2, 0]
         Q[idx["r"], 1] = S[2, 0] - S[1, 0]
         Q[idx["c"], 1] = S[0, 0] * c_y_ratio - gov.g_y_ratio  # クラウディングアウト
-        Q[idx["i"], 1] = S[0, 0] * IMPULSE_COEFFICIENTS.government_spending_investment_spillover
+        Q[idx["i"], 1] = S[0, 0] * imp.government_spending_investment_spillover
         Q[idx["n"], 1] = S[0, 0] / (1 - firm.alpha)
         Q[idx["w"], 1] = S[0, 0] - Q[idx["n"], 1]
         Q[idx["b"], 1] = gov.g_y_ratio  # 債務増加
@@ -225,18 +234,16 @@ class DSGEModel:
         Q[idx["pi"], 2] = S[1, 2]
         Q[idx["r"], 2] = S[2, 2] - S[1, 2]
         Q[idx["c"], 2] = S[0, 2] * c_y_ratio
-        Q[idx["i"], 2] = S[0, 2] * IMPULSE_COEFFICIENTS.monetary_investment_elasticity
+        Q[idx["i"], 2] = S[0, 2] * imp.monetary_investment_elasticity
 
         # e_tau: 消費税ショック (index 3)
         # 消費税増税は消費を減少させ、産出を減少させる
-        imp = IMPULSE_COEFFICIENTS
         Q[idx["tau_c"], 3] = 1.0
         Q[idx["c"], 3] = -imp.consumption_tax_elasticity
         Q[idx["y"], 3] = -imp.consumption_tax_elasticity * imp.output_tax_multiplier_factor
         Q[idx["pi"], 3] = imp.inflation_tax_passthrough
-        Q[idx["R"], 3] = (
-            cb.phi_pi * imp.inflation_tax_passthrough
-            + cb.phi_y * (-imp.consumption_tax_elasticity * imp.output_tax_multiplier_factor)
+        Q[idx["R"], 3] = cb.phi_pi * imp.inflation_tax_passthrough + cb.phi_y * (
+            -imp.consumption_tax_elasticity * imp.output_tax_multiplier_factor
         )
         Q[idx["b"], 3] = -imp.debt_tax_effect
 
@@ -271,3 +278,4 @@ class DSGEModel:
         self._steady_state = None
         self._policy_result = None
         self._nk_model = None
+        self._derived_coefficients = None

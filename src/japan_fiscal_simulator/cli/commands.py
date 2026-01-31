@@ -14,6 +14,7 @@ from japan_fiscal_simulator.core.simulation import (
     FiscalMultiplierCalculator,
     ImpulseResponseSimulator,
 )
+from japan_fiscal_simulator.mcp.tools import ContextManager
 from japan_fiscal_simulator.output.graphs import GraphGenerator
 from japan_fiscal_simulator.output.reports import ReportGenerator
 from japan_fiscal_simulator.parameters.calibration import JapanCalibration
@@ -317,8 +318,6 @@ def report_command(
     ] = None,
 ) -> None:
     """レポートを生成"""
-    from japan_fiscal_simulator.mcp.tools import ContextManager
-
     ctx = ContextManager.get()
 
     if ctx.latest_result is None:

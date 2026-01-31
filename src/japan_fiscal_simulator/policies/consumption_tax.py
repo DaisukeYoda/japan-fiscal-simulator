@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from japan_fiscal_simulator.core.simulation import ImpulseResponseSimulator
 from japan_fiscal_simulator.output.schemas import PolicyScenario, PolicyType, ShockType
 
 if TYPE_CHECKING:
@@ -77,8 +78,6 @@ class ConsumptionTaxPolicy:
 
     def analyze(self, scenario: PolicyScenario) -> ConsumptionTaxAnalysis:
         """シナリオを分析"""
-        from japan_fiscal_simulator.core.simulation import ImpulseResponseSimulator
-
         simulator = ImpulseResponseSimulator(self.model)
         irf = simulator.simulate(
             shock_name="e_tau",

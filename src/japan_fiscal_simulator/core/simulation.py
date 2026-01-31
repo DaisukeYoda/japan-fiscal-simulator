@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from japan_fiscal_simulator.core.model import N_SHOCKS, N_VARIABLES, SHOCK_VARS, VARIABLE_INDICES
-from japan_fiscal_simulator.parameters.constants import TRANSITION_COEFFICIENTS
+from japan_fiscal_simulator.parameters.constants import SOLVER_CONSTANTS
 
 if TYPE_CHECKING:
     from japan_fiscal_simulator.core.model import DSGEModel
@@ -92,7 +92,7 @@ class ImpulseResponseSimulator:
                 x_history[t] = P @ x_history[t - 1]
             else:
                 # Pの次元が合わない場合は減衰
-                x_history[t] = x_history[t - 1] * TRANSITION_COEFFICIENTS.fallback_decay_rate
+                x_history[t] = x_history[t - 1] * SOLVER_CONSTANTS.fallback_decay_rate
 
         # 結果を変数名でマッピング（t=0のインパクトを含む）
         responses = {}

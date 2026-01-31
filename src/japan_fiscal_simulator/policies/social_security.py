@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from japan_fiscal_simulator.core.simulation import ImpulseResponseSimulator
 from japan_fiscal_simulator.output.schemas import PolicyScenario, PolicyType, ShockType
 
 if TYPE_CHECKING:
@@ -78,8 +79,6 @@ class SocialSecurityPolicy:
 
     def analyze(self, scenario: PolicyScenario) -> SocialSecurityAnalysis:
         """シナリオを分析"""
-        from japan_fiscal_simulator.core.simulation import ImpulseResponseSimulator
-
         simulator = ImpulseResponseSimulator(self.model)
 
         # 移転支払いは政府支出ショックとして近似

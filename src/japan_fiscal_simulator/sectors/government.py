@@ -34,7 +34,7 @@ class GovernmentSector:
     τ_t = τ_ss + φ_b*(B_{t-1}/Y_{t-1} - b_ss)
     """
 
-    def __init__(self, params: "GovernmentParameters") -> None:
+    def __init__(self, params: GovernmentParameters) -> None:
         self.tau_c = params.tau_c
         self.tau_l = params.tau_l
         self.tau_k = params.tau_k

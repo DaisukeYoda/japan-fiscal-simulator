@@ -31,7 +31,7 @@ class FirmSector:
     価格設定: Calvo型（θの確率で価格維持）
     """
 
-    def __init__(self, params: "FirmParameters") -> None:
+    def __init__(self, params: FirmParameters) -> None:
         self.alpha = params.alpha
         self.delta = params.delta
         self.theta = params.theta

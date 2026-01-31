@@ -40,7 +40,7 @@ class FinancialSector:
     - χ: 弾力性パラメータ
     """
 
-    def __init__(self, params: "FinancialParameters") -> None:
+    def __init__(self, params: FinancialParameters) -> None:
         self.chi_b = params.chi_b
         self.leverage_ss = params.leverage_ss
         self.survival_rate = params.survival_rate

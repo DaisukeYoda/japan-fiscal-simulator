@@ -98,7 +98,7 @@ class NewKeynesianModel:
     ここで y_t は産出ギャップ（産出 - 自然産出）
     """
 
-    def __init__(self, params: "DefaultParameters") -> None:
+    def __init__(self, params: DefaultParameters) -> None:
         self.params = params
         self.vars = ModelVariables()
         self._steady_state: SteadyState | None = None

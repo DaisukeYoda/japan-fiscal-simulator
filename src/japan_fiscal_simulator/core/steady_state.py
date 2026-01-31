@@ -81,7 +81,7 @@ class SteadyState:
 class SteadyStateSolver:
     """定常状態を数値的に求めるソルバー"""
 
-    def __init__(self, params: "DefaultParameters") -> None:
+    def __init__(self, params: DefaultParameters) -> None:
         self.params = params
 
     def solve(self) -> SteadyState:

@@ -3,7 +3,7 @@ name = "jpfs"
 version = "0.0.1"
 description = "Japan Fiscal Simulator - New Keynesian DSGEモデルによる財政政策分析"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.14"
 license = {text = "MIT"}
 authors = [
     {name = "Japan Fiscal Team"}
@@ -13,8 +13,7 @@ classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
     "Topic :: Scientific/Engineering :: Mathematics",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.14",
 ]
 
 dependencies = [
@@ -48,7 +47,7 @@ packages = ["src/japan_fiscal_simulator"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py311"
+target-version = "py314"
 
 [tool.ruff.lint]
 select = [
@@ -72,7 +71,7 @@ quote-style = "double"
 indent-style = "space"
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.14"
 strict = true
 
 [tool.pytest.ini_options]

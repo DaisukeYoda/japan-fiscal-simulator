@@ -33,7 +33,7 @@ class HouseholdSector:
     2. 労働供給方程式
     """
 
-    def __init__(self, params: "HouseholdParameters", gov_params: "GovernmentParameters") -> None:
+    def __init__(self, params: HouseholdParameters, gov_params: GovernmentParameters) -> None:
         self.beta = params.beta
         self.sigma = params.sigma
         self.phi = params.phi

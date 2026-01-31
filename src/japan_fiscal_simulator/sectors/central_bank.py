@@ -31,7 +31,7 @@ class CentralBankSector:
     R_t = max(R_t, R_lower_bound)
     """
 
-    def __init__(self, params: "CentralBankParameters") -> None:
+    def __init__(self, params: CentralBankParameters) -> None:
         self.rho_r = params.rho_r
         self.phi_pi = params.phi_pi
         self.phi_y = params.phi_y

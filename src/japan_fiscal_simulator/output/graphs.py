@@ -82,7 +82,7 @@ class GraphGenerator:
 
     def plot_impulse_response(
         self,
-        result: "ImpulseResponseResult",
+        result: ImpulseResponseResult,
         variables: list[str] | None = None,
         title: str | None = None,
         save_path: Path | str | None = None,
@@ -160,7 +160,7 @@ class GraphGenerator:
 
     def plot_comparison(
         self,
-        results: list["ImpulseResponseResult"],
+        results: list[ImpulseResponseResult],
         variable: str,
         labels: list[str] | None = None,
         title: str | None = None,

@@ -186,7 +186,7 @@ class BlanchardKahnSolver:
         A_1: np.ndarray,  # x_{t-1}の係数
         B: np.ndarray,  # ショック係数
         n_predetermined: int,
-    ) -> "BlanchardKahnSolver":
+    ) -> BlanchardKahnSolver:
         """モデル行列から直接ソルバーを構築
 
         モデル形式: A0 * x_t = A1 * E[x_{t+1}] + A_1 * x_{t-1} + B * ε_t

@@ -15,7 +15,7 @@ class SocialSecurityAnalysis:
     """社会保障政策の分析結果"""
 
     scenario: PolicyScenario
-    impulse_response: "ImpulseResponseResult"
+    impulse_response: ImpulseResponseResult
     output_effect_peak: float
     consumption_effect_peak: float
     debt_impact: float
@@ -30,7 +30,7 @@ class SocialSecurityPolicy:
     移転支払いの効果が過小評価される可能性がある
     """
 
-    def __init__(self, model: "DSGEModel") -> None:
+    def __init__(self, model: DSGEModel) -> None:
         self.model = model
 
     @staticmethod

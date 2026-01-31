@@ -11,6 +11,10 @@ import numpy as np
 
 from japan_fiscal_simulator.core.nk_model import NewKeynesianModel
 from japan_fiscal_simulator.core.steady_state import SteadyState, SteadyStateSolver
+from japan_fiscal_simulator.parameters.constants import (
+    IMPULSE_COEFFICIENTS,
+    TRANSITION_COEFFICIENTS,
+)
 
 if TYPE_CHECKING:
     from japan_fiscal_simulator.parameters.defaults import DefaultParameters
@@ -162,7 +166,7 @@ class DSGEModel:
         P[idx["c"], idx["g"]] = -gov.g_y_ratio
 
         # 投資: 加速度効果
-        P[idx["i"], idx["y"]] = 1.5  # 投資の産出弾力性
+        P[idx["i"], idx["y"]] = TRANSITION_COEFFICIENTS.investment_accelerator
 
         # 労働: 生産関数から (N = Y / A * K^(-α))
         P[idx["n"], idx["y"]] = 1.0 / (1 - firm.alpha)
@@ -179,8 +183,7 @@ class DSGEModel:
         P[idx["k"], idx["i"]] = firm.delta
 
         # 政府債務: 財政ルール
-        rho_b = 0.99  # 債務の持続性
-        P[idx["b"], idx["b"]] = rho_b
+        P[idx["b"], idx["b"]] = TRANSITION_COEFFICIENTS.debt_persistence
         P[idx["b"], idx["g"]] = gov.g_y_ratio
 
         # 消費税率: 外生
@@ -200,7 +203,7 @@ class DSGEModel:
         Q[idx["R"], 0] = S[2, 1]
         Q[idx["r"], 0] = S[2, 1] - S[1, 1]  # R - π
         Q[idx["c"], 0] = S[0, 1] * c_y_ratio
-        Q[idx["i"], 0] = S[0, 1] * 1.5
+        Q[idx["i"], 0] = S[0, 1] * IMPULSE_COEFFICIENTS.technology_investment_share
         Q[idx["n"], 0] = S[0, 1] / (1 - firm.alpha) - 1.0  # 技術上昇で労働減少
         Q[idx["w"], 0] = S[0, 1] - Q[idx["n"], 0]
 
@@ -211,7 +214,7 @@ class DSGEModel:
         Q[idx["R"], 1] = S[2, 0]
         Q[idx["r"], 1] = S[2, 0] - S[1, 0]
         Q[idx["c"], 1] = S[0, 0] * c_y_ratio - gov.g_y_ratio  # クラウディングアウト
-        Q[idx["i"], 1] = S[0, 0] * 0.5  # 投資への部分的波及
+        Q[idx["i"], 1] = S[0, 0] * IMPULSE_COEFFICIENTS.government_spending_investment_spillover
         Q[idx["n"], 1] = S[0, 0] / (1 - firm.alpha)
         Q[idx["w"], 1] = S[0, 0] - Q[idx["n"], 1]
         Q[idx["b"], 1] = gov.g_y_ratio  # 債務増加
@@ -222,23 +225,26 @@ class DSGEModel:
         Q[idx["pi"], 2] = S[1, 2]
         Q[idx["r"], 2] = S[2, 2] - S[1, 2]
         Q[idx["c"], 2] = S[0, 2] * c_y_ratio
-        Q[idx["i"], 2] = S[0, 2] * 2.0  # 投資は金利に敏感
+        Q[idx["i"], 2] = S[0, 2] * IMPULSE_COEFFICIENTS.monetary_investment_elasticity
 
         # e_tau: 消費税ショック (index 3)
         # 消費税増税は消費を減少させ、産出を減少させる
-        tau_mult = 0.8  # 消費税の産出乗数
+        imp = IMPULSE_COEFFICIENTS
         Q[idx["tau_c"], 3] = 1.0
-        Q[idx["c"], 3] = -0.8  # 消費減少
-        Q[idx["y"], 3] = -tau_mult * 0.6  # 産出減少
-        Q[idx["pi"], 3] = 0.3  # 物価上昇（転嫁）
-        Q[idx["R"], 3] = cb.phi_pi * 0.3 + cb.phi_y * (-tau_mult * 0.6)
-        Q[idx["b"], 3] = -0.3  # 税収増で債務減少
+        Q[idx["c"], 3] = -imp.consumption_tax_elasticity
+        Q[idx["y"], 3] = -imp.consumption_tax_elasticity * imp.output_tax_multiplier_factor
+        Q[idx["pi"], 3] = imp.inflation_tax_passthrough
+        Q[idx["R"], 3] = (
+            cb.phi_pi * imp.inflation_tax_passthrough
+            + cb.phi_y * (-imp.consumption_tax_elasticity * imp.output_tax_multiplier_factor)
+        )
+        Q[idx["b"], 3] = -imp.debt_tax_effect
 
         # e_risk: リスクプレミアムショック (index 4)
-        Q[idx["r"], 4] = 0.5  # リスクプレミアム上昇
-        Q[idx["i"], 4] = -0.8  # 投資減少
-        Q[idx["y"], 4] = -0.3  # 産出減少
-        Q[idx["c"], 4] = -0.2  # 消費減少
+        Q[idx["r"], 4] = imp.risk_interest_rate_response
+        Q[idx["i"], 4] = -imp.risk_investment_response
+        Q[idx["y"], 4] = -imp.risk_output_response
+        Q[idx["c"], 4] = -imp.risk_consumption_response
 
         # 固有値（状態遷移行列の対角成分）
         eigenvalues = np.diag(P)

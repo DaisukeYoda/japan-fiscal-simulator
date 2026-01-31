@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 from scipy.optimize import fsolve
 
+from japan_fiscal_simulator.core.exceptions import ConvergenceError
 from japan_fiscal_simulator.parameters.constants import (
     SolverConstants,
     SteadyStateConstants,
@@ -248,7 +249,7 @@ class SteadyStateSolver:
         solution, info, ier, mesg = fsolve(residuals, x0, full_output=True)
 
         if ier != 1:
-            raise ValueError(f"定常状態の収束に失敗: {mesg}")
+            raise ConvergenceError(f"定常状態の収束に失敗しました: {mesg}")
 
         y, c, n, k, w, r = solution
 

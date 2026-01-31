@@ -1,5 +1,7 @@
 """CLIコマンド実装"""
 
+from collections.abc import Callable
+from functools import wraps
 from pathlib import Path
 from typing import Annotated, Protocol
 
@@ -9,6 +11,7 @@ from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 
+from japan_fiscal_simulator.core.exceptions import JPFSError, SolverError, ValidationError
 from japan_fiscal_simulator.core.model import DSGEModel
 from japan_fiscal_simulator.core.simulation import (
     FiscalMultiplierCalculator,
@@ -20,6 +23,29 @@ from japan_fiscal_simulator.output.reports import ReportGenerator
 from japan_fiscal_simulator.parameters.calibration import JapanCalibration
 
 console = Console()
+
+
+def handle_jpfs_error[F: Callable[..., None]](func: F) -> F:
+    """CLI用エラーハンドリングデコレータ
+
+    JPFSの例外を捕捉し、ユーザーフレンドリーなエラーメッセージを表示する。
+    """
+
+    @wraps(func)
+    def wrapper(*args: object, **kwargs: object) -> None:
+        try:
+            func(*args, **kwargs)
+        except ValidationError as e:
+            console.print(f"[red]入力エラー: {e}[/red]")
+            raise typer.Exit(1) from e
+        except SolverError as e:
+            console.print(f"[red]計算エラー: {e}[/red]")
+            raise typer.Exit(2) from e
+        except JPFSError as e:
+            console.print(f"[red]エラー: {e}[/red]")
+            raise typer.Exit(3) from e
+
+    return wrapper  # type: ignore[return-value]
 
 
 class ModelFactory(Protocol):
@@ -61,6 +87,7 @@ class ModelFactoryManager:
         cls._instance = None
 
 
+@handle_jpfs_error
 def simulate_command(
     policy_type: Annotated[
         str,
@@ -161,6 +188,7 @@ def simulate_command(
         console.print(f"\n[green]グラフを保存しました: {save_path}[/green]")
 
 
+@handle_jpfs_error
 def multiplier_command(
     policy_type: Annotated[
         str,
@@ -211,6 +239,7 @@ def multiplier_command(
     console.print(table)
 
 
+@handle_jpfs_error
 def steady_state_command() -> None:
     """定常状態を表示"""
     factory = ModelFactoryManager.get()
@@ -259,6 +288,7 @@ def steady_state_command() -> None:
     console.print(table3)
 
 
+@handle_jpfs_error
 def parameters_command() -> None:
     """パラメータを表示"""
     factory = ModelFactoryManager.get()
@@ -318,6 +348,7 @@ def parameters_command() -> None:
     console.print(table4)
 
 
+@handle_jpfs_error
 def report_command(
     output_file: Annotated[
         Path | None,

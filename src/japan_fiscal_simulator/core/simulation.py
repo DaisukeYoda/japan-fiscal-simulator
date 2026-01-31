@@ -5,8 +5,9 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
+from japan_fiscal_simulator.core.exceptions import ShockValidationError, ValidationError
 from japan_fiscal_simulator.core.model import N_SHOCKS, N_VARIABLES, SHOCK_VARS, VARIABLE_INDICES
-from japan_fiscal_simulator.parameters.constants import SOLVER_CONSTANTS
+from japan_fiscal_simulator.parameters.constants import SIMULATION_LIMITS
 
 if TYPE_CHECKING:
     from japan_fiscal_simulator.core.model import DSGEModel
@@ -62,12 +63,30 @@ class ImpulseResponseSimulator:
 
         Returns:
             ImpulseResponseResult
-        """
-        policy = self.model.policy_function
 
-        # ショックインデックス
+        Raises:
+            ShockValidationError: ショック名が無効またはショックサイズが範囲外の場合
+            ValidationError: 期間数が範囲外の場合
+        """
+        # バリデーション
         if shock_name not in SHOCK_VARS:
-            raise ValueError(f"Unknown shock: {shock_name}. Available: {SHOCK_VARS}")
+            raise ShockValidationError(
+                f"無効なショック名です: '{shock_name}'。有効な値: {SHOCK_VARS}"
+            )
+
+        if abs(shock_size) > SIMULATION_LIMITS.max_shock_size:
+            raise ShockValidationError(
+                f"ショックサイズ（{shock_size * 100:.1f}%）が制限を超えています。"
+                f"絶対値{SIMULATION_LIMITS.max_shock_size * 100:.0f}%以内で指定してください。"
+            )
+
+        if not SIMULATION_LIMITS.min_periods <= periods <= SIMULATION_LIMITS.max_periods:
+            raise ValidationError(
+                f"期間数（{periods}）が範囲外です。"
+                f"{SIMULATION_LIMITS.min_periods}〜{SIMULATION_LIMITS.max_periods}の間で指定してください。"
+            )
+
+        policy = self.model.policy_function
         shock_idx = SHOCK_VARS.index(shock_name)
 
         # 状態変数の時系列
@@ -82,17 +101,12 @@ class ImpulseResponseSimulator:
         if policy.Q.shape[1] >= N_SHOCKS:
             x_history[0] = policy.Q[:, :N_SHOCKS] @ epsilon
         else:
-            # Qの次元が足りない場合
             x_history[0, : policy.Q.shape[0]] = policy.Q @ epsilon[: policy.Q.shape[1]]
 
         # 時間発展: x_t = P * x_{t-1}
         P = policy.P
         for t in range(1, periods + 1):
-            if P.shape[0] == n_vars and P.shape[1] == n_vars:
-                x_history[t] = P @ x_history[t - 1]
-            else:
-                # Pの次元が合わない場合は減衰
-                x_history[t] = x_history[t - 1] * SOLVER_CONSTANTS.fallback_decay_rate
+            x_history[t] = P @ x_history[t - 1]
 
         # 結果を変数名でマッピング（t=0のインパクトを含む）
         responses = {}

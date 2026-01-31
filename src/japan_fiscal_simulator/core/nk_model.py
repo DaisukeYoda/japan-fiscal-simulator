@@ -23,6 +23,7 @@ from japan_fiscal_simulator.core.equations import (
     check_taylor_principle,
     compute_phillips_slope,
 )
+from japan_fiscal_simulator.core.exceptions import ValidationError
 from japan_fiscal_simulator.core.steady_state import SteadyState, SteadyStateSolver
 
 if TYPE_CHECKING:
@@ -82,7 +83,7 @@ class ModelVariables:
             return self.state_vars.index(var)
         if var in self.control_vars:
             return self.n_state + self.control_vars.index(var)
-        raise ValueError(f"Unknown variable: {var}")
+        raise ValidationError(f"無効な変数名です: '{var}'")
 
     def shock_index(self, shock: str) -> int:
         return self.shocks.index(shock)

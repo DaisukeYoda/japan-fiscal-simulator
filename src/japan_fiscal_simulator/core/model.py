@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from japan_fiscal_simulator.core.derived_coefficients import DerivedCoefficients
+from japan_fiscal_simulator.core.exceptions import ValidationError
 from japan_fiscal_simulator.core.nk_model import NewKeynesianModel
 from japan_fiscal_simulator.core.steady_state import SteadyState, SteadyStateSolver
 
@@ -272,7 +273,7 @@ class DSGEModel:
         for name, idx in VARIABLE_INDICES.items():
             if idx == index:
                 return name
-        raise ValueError(f"Unknown index: {index}")
+        raise ValidationError(f"無効な変数インデックスです: {index}")
 
     def invalidate_cache(self) -> None:
         self._steady_state = None

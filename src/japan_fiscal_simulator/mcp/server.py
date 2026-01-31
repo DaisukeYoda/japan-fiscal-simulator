@@ -13,6 +13,7 @@ from mcp.types import (
 )
 from pydantic import AnyUrl
 
+from japan_fiscal_simulator.core.exceptions import JPFSError, SolverError, ValidationError
 from japan_fiscal_simulator.mcp.resources import (
     get_current_parameters,
     get_latest_results,
@@ -186,15 +187,43 @@ def create_server() -> Server:
             elif name == "generate_report":
                 result = generate_report(**arguments)
             else:
-                result = {"error": f"Unknown tool: {name}"}
+                result = {"error": f"不明なツールです: {name}", "error_code": "UNKNOWN_TOOL"}
 
             return [
                 TextContent(
                     type="text", text=json.dumps(result, ensure_ascii=False, indent=2, default=str)
                 )
             ]
-        except Exception as e:
-            return [TextContent(type="text", text=json.dumps({"error": str(e)}))]
+        except ValidationError as e:
+            return [
+                TextContent(
+                    type="text",
+                    text=json.dumps(
+                        {"error": str(e), "error_code": "VALIDATION_ERROR"},
+                        ensure_ascii=False,
+                    ),
+                )
+            ]
+        except SolverError as e:
+            return [
+                TextContent(
+                    type="text",
+                    text=json.dumps(
+                        {"error": str(e), "error_code": "SOLVER_ERROR"},
+                        ensure_ascii=False,
+                    ),
+                )
+            ]
+        except JPFSError as e:
+            return [
+                TextContent(
+                    type="text",
+                    text=json.dumps(
+                        {"error": str(e), "error_code": "JPFS_ERROR"},
+                        ensure_ascii=False,
+                    ),
+                )
+            ]
 
     @server.list_resources()  # type: ignore[no-untyped-call, untyped-decorator]
     async def list_resources() -> list[Resource]:

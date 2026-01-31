@@ -9,6 +9,11 @@ from dataclasses import dataclass
 import numpy as np
 from scipy.linalg import ordqz, solve
 
+from japan_fiscal_simulator.core.exceptions import (
+    BlanchardKahnError,
+    SingularMatrixError,
+)
+
 
 @dataclass
 class SolutionResult:
@@ -102,7 +107,7 @@ class LinearRESolver:
                 sort="iuc",  # inside unit circle
             )
         except Exception as e:
-            return self._failure_result(f"QZ分解失敗: {e}")
+            raise BlanchardKahnError(f"QZ分解に失敗しました: {e}") from e
 
         # 固有値を計算
         with np.errstate(divide="ignore", invalid="ignore"):
@@ -115,10 +120,13 @@ class LinearRESolver:
         # Blanchard-Kahn条件: 不安定固有値の数 = 制御変数の数
         if n_unstable != self.n_control:
             if n_unstable > self.n_control:
-                msg = f"BK条件違反: 不安定固有値 {n_unstable} > 制御変数 {self.n_control} (解なし)"
+                raise BlanchardKahnError(
+                    f"BK条件違反: 不安定固有値 {n_unstable} > 制御変数 {self.n_control} (解なし)"
+                )
             else:
-                msg = f"BK条件違反: 不安定固有値 {n_unstable} < 制御変数 {self.n_control} (不定解)"
-            return self._failure_result(msg, eigenvalues, n_stable, n_unstable)
+                raise BlanchardKahnError(
+                    f"BK条件違反: 不安定固有値 {n_unstable} < 制御変数 {self.n_control} (不定解)"
+                )
 
         # 解の抽出
         # Z を分割: Z = [[Z11, Z12], [Z21, Z22]]
@@ -138,18 +146,15 @@ class LinearRESolver:
 
         # Z11_s が正則でない場合の処理
         if np.linalg.matrix_rank(Z11_s, tol=tol) < min(Z11_s.shape):
-            return self._failure_result(
-                "Z11_s が特異: 状態変数の解が一意に定まらない",
-                eigenvalues,
-                n_stable,
-                n_unstable,
+            raise SingularMatrixError(
+                "Z11_s が特異です: 状態変数の解が一意に定まりません"
             )
 
         try:
             # R = Z11_c @ inv(Z11_s): 制御変数の状態依存
             R = solve(Z11_s.T, Z11_c.T).T
-        except np.linalg.LinAlgError:
-            R = Z11_c @ np.linalg.pinv(Z11_s)
+        except np.linalg.LinAlgError as e:
+            raise SingularMatrixError(f"Z11_s の逆行列計算に失敗しました: {e}") from e
 
         # 状態遷移行列 P の導出
         # S, T の安定ブロック
@@ -159,14 +164,14 @@ class LinearRESolver:
         # P_tilde = inv(S11) @ T11 (安定部分空間での遷移)
         try:
             P_tilde = solve(S11, T11)
-        except np.linalg.LinAlgError:
-            P_tilde = np.linalg.pinv(S11) @ T11
+        except np.linalg.LinAlgError as e:
+            raise SingularMatrixError(f"S11 の逆行列計算に失敗しました: {e}") from e
 
         # 状態変数への射影: P = Z11_s @ P_tilde @ inv(Z11_s)
         try:
             P = Z11_s @ P_tilde @ np.linalg.inv(Z11_s)
-        except np.linalg.LinAlgError:
-            P = Z11_s @ P_tilde @ np.linalg.pinv(Z11_s)
+        except np.linalg.LinAlgError as e:
+            raise SingularMatrixError(f"状態変数への射影計算に失敗しました: {e}") from e
 
         # 状態変数のみを取り出す
         P = P[: self.n_state, : self.n_state]
@@ -180,12 +185,8 @@ class LinearRESolver:
 
         try:
             QS = solve(impact_matrix[: self.n_state, : self.n_state], -self.D[: self.n_state, :])
-        except np.linalg.LinAlgError:
-            QS = np.linalg.lstsq(
-                impact_matrix[: self.n_state, : self.n_state],
-                -self.D[: self.n_state, :],
-                rcond=None,
-            )[0]
+        except np.linalg.LinAlgError as e:
+            raise SingularMatrixError(f"ショック応答行列の計算に失敗しました: {e}") from e
 
         Q = QS
         S = R @ Q if self.n_control > 0 else np.zeros((0, self.n_shock))
@@ -202,26 +203,4 @@ class LinearRESolver:
             n_control=self.n_control,
             bk_satisfied=True,
             message="解が見つかりました",
-        )
-
-    def _failure_result(
-        self,
-        message: str,
-        eigenvalues: np.ndarray | None = None,
-        n_stable: int = 0,
-        n_unstable: int = 0,
-    ) -> SolutionResult:
-        """失敗時の結果を返す"""
-        return SolutionResult(
-            P=np.zeros((self.n_state, self.n_state)),
-            Q=np.zeros((self.n_state, self.n_shock)),
-            R=np.zeros((self.n_control, self.n_state)),
-            S=np.zeros((self.n_control, self.n_shock)),
-            eigenvalues=eigenvalues if eigenvalues is not None else np.array([]),
-            n_stable=n_stable,
-            n_unstable=n_unstable,
-            n_state=self.n_state,
-            n_control=self.n_control,
-            bk_satisfied=False,
-            message=message,
         )

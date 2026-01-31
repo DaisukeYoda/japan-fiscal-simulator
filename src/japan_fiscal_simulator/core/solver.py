@@ -6,8 +6,16 @@ from typing import TYPE_CHECKING
 import numpy as np
 from scipy.linalg import ordqz
 
+from japan_fiscal_simulator.core.exceptions import (
+    BlanchardKahnError,
+    SingularMatrixError,
+)
+
 if TYPE_CHECKING:
     pass
+
+# 例外クラスの再エクスポート
+__all__ = ["BlanchardKahnError", "BlanchardKahnResult", "BlanchardKahnSolver"]
 
 
 @dataclass
@@ -24,12 +32,6 @@ class BlanchardKahnResult:
     n_predetermined: int  # 先決変数の数
     bk_satisfied: bool  # Blanchard-Kahn条件充足
     eigenvalues: np.ndarray  # 固有値
-
-
-class BlanchardKahnError(Exception):
-    """Blanchard-Kahn条件違反エラー"""
-
-    pass
 
 
 class BlanchardKahnSolver:
@@ -157,9 +159,8 @@ class BlanchardKahnSolver:
         try:
             Z11_inv = np.linalg.solve(Z11.T, Z21.T).T
             P = Z11_inv
-        except np.linalg.LinAlgError:
-            # 特異行列の場合は擬似逆行列を使用
-            P = Z21 @ np.linalg.pinv(Z11)
+        except np.linalg.LinAlgError as e:
+            raise SingularMatrixError(f"Z11行列が特異です: {e}") from e
 
         # ショック応答行列 Q の計算
         # まずインパクト行列を計算
@@ -173,8 +174,8 @@ class BlanchardKahnSolver:
                 if impact_matrix.shape[0] >= n
                 else self.D
             )
-        except (np.linalg.LinAlgError, ValueError):
-            Q_mat = self.D
+        except np.linalg.LinAlgError as e:
+            raise SingularMatrixError(f"インパクト行列が特異です: {e}") from e
 
         return P, Q_mat
 

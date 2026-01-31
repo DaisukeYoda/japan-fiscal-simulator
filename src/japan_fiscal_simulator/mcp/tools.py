@@ -4,6 +4,7 @@ import time
 from datetime import datetime
 from typing import Any
 
+from japan_fiscal_simulator.core.exceptions import ShockValidationError
 from japan_fiscal_simulator.core.model import DSGEModel
 from japan_fiscal_simulator.core.simulation import (
     FiscalMultiplierCalculator,
@@ -113,7 +114,10 @@ def simulate_policy(
 
     shock_name = shock_mapping.get(policy_type)
     if shock_name is None:
-        raise ValueError(f"Unknown policy type: {policy_type}")
+        raise ShockValidationError(
+            f"無効な政策タイプです: '{policy_type}'。"
+            f"有効な値: {list(shock_mapping.keys())}"
+        )
 
     # シミュレーション実行
     simulator = ImpulseResponseSimulator(ctx.model)
@@ -310,7 +314,10 @@ def get_fiscal_multiplier(
     elif policy_type == "consumption_tax":
         result = calc.compute_tax_multiplier(horizon)
     else:
-        raise ValueError(f"Unknown policy type: {policy_type}")
+        raise ShockValidationError(
+            f"無効な政策タイプです: '{policy_type}'。"
+            f"有効な値: 'government_spending', 'consumption_tax'"
+        )
 
     return {
         "policy_type": policy_type,

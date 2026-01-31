@@ -2,6 +2,8 @@
 
 from dataclasses import dataclass, replace
 
+from japan_fiscal_simulator.core.exceptions import ParameterValidationError
+from japan_fiscal_simulator.parameters.constants import PARAMETER_LIMITS
 from japan_fiscal_simulator.parameters.defaults import (
     CentralBankParameters,
     DefaultParameters,
@@ -79,12 +81,42 @@ class JapanCalibration:
         return cls(parameters=base.parameters.with_updates(central_bank=new_cb))
 
     def set_consumption_tax(self, rate: float) -> JapanCalibration:
-        """消費税率を変更"""
+        """消費税率を変更
+
+        Args:
+            rate: 消費税率（0〜0.5の範囲）
+
+        Raises:
+            ParameterValidationError: 税率が有効範囲外の場合
+        """
+        if not PARAMETER_LIMITS.min_consumption_tax <= rate <= PARAMETER_LIMITS.max_consumption_tax:
+            raise ParameterValidationError(
+                f"消費税率（{rate * 100:.1f}%）が有効範囲外です。"
+                f"{PARAMETER_LIMITS.min_consumption_tax * 100:.0f}%〜"
+                f"{PARAMETER_LIMITS.max_consumption_tax * 100:.0f}%の間で指定してください。"
+            )
         new_gov = replace(self.parameters.government, tau_c=rate)
         return JapanCalibration(parameters=self.parameters.with_updates(government=new_gov))
 
     def set_government_spending_ratio(self, ratio: float) -> JapanCalibration:
-        """政府支出/GDP比率を変更"""
+        """政府支出/GDP比率を変更
+
+        Args:
+            ratio: 政府支出/GDP比率（0〜0.6の範囲）
+
+        Raises:
+            ParameterValidationError: 比率が有効範囲外の場合
+        """
+        if (
+            not PARAMETER_LIMITS.min_government_spending_ratio
+            <= ratio
+            <= PARAMETER_LIMITS.max_government_spending_ratio
+        ):
+            raise ParameterValidationError(
+                f"政府支出比率（{ratio * 100:.1f}%）が有効範囲外です。"
+                f"{PARAMETER_LIMITS.min_government_spending_ratio * 100:.0f}%〜"
+                f"{PARAMETER_LIMITS.max_government_spending_ratio * 100:.0f}%の間で指定してください。"
+            )
         new_gov = replace(self.parameters.government, g_y_ratio=ratio)
         return JapanCalibration(parameters=self.parameters.with_updates(government=new_gov))
 

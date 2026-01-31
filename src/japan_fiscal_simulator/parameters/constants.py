@@ -32,8 +32,29 @@ class SolverConstants:
     initial_wage: float = 1.0
     initial_interest_rate: float = 0.01
 
-    # シミュレーションのフォールバック
-    fallback_decay_rate: float = 0.9  # 次元不一致時の減衰率
+
+@dataclass(frozen=True)
+class SimulationLimits:
+    """シミュレーションの入力制限"""
+
+    max_shock_size: float = 0.50  # ショックサイズの最大値（絶対値50%）
+    min_periods: int = 1
+    max_periods: int = 200
+
+
+@dataclass(frozen=True)
+class ParameterLimits:
+    """パラメータの有効範囲"""
+
+    min_consumption_tax: float = 0.0
+    max_consumption_tax: float = 0.50  # 最大50%
+    min_government_spending_ratio: float = 0.0
+    max_government_spending_ratio: float = 0.60  # 最大60%
+
+
+# デフォルトインスタンス
+SIMULATION_LIMITS = SimulationLimits()
+PARAMETER_LIMITS = ParameterLimits()
 
 
 @dataclass(frozen=True)
@@ -46,6 +67,6 @@ class SteadyStateRatios:
     capital_income_share: float = 0.33  # 資本所得シェア (α)
 
 
-# デフォルトインスタンス
+# デフォルトインスタンス（後方互換性のため維持）
 STEADY_STATE_RATIOS = SteadyStateRatios()
 SOLVER_CONSTANTS = SolverConstants()

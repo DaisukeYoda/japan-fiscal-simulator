@@ -1,7 +1,7 @@
 """CLIコマンド実装"""
 
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Protocol
 
 import typer
 from rich.console import Console
@@ -19,6 +19,38 @@ from japan_fiscal_simulator.output.reports import ReportGenerator
 from japan_fiscal_simulator.parameters.calibration import JapanCalibration
 
 console = Console()
+
+
+class ModelFactory(Protocol):
+    """モデル生成のプロトコル（DI用）"""
+
+    def create_calibration(self) -> JapanCalibration: ...
+    def create_model(self, calibration: JapanCalibration) -> DSGEModel: ...
+
+
+class DefaultModelFactory:
+    """デフォルトのモデルファクトリ"""
+
+    def create_calibration(self) -> JapanCalibration:
+        return JapanCalibration.create()
+
+    def create_model(self, calibration: JapanCalibration) -> DSGEModel:
+        return DSGEModel(calibration.parameters)
+
+
+# デフォルトファクトリ（テスト時に差し替え可能）
+_model_factory: ModelFactory = DefaultModelFactory()
+
+
+def set_model_factory(factory: ModelFactory) -> None:
+    """モデルファクトリを設定（テスト用）"""
+    global _model_factory
+    _model_factory = factory
+
+
+def get_model_factory() -> ModelFactory:
+    """現在のモデルファクトリを取得"""
+    return _model_factory
 
 
 def simulate_command(
@@ -44,6 +76,8 @@ def simulate_command(
     ] = None,
 ) -> None:
     """財政政策シミュレーションを実行"""
+    factory = get_model_factory()
+
     with Progress(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
@@ -51,9 +85,9 @@ def simulate_command(
     ) as progress:
         progress.add_task("モデルを初期化中...", total=None)
 
-        # モデル初期化
-        calibration = JapanCalibration.create()
-        model = DSGEModel(calibration.parameters)
+        # モデル初期化（ファクトリ経由）
+        calibration = factory.create_calibration()
+        model = factory.create_model(calibration)
 
         progress.add_task("シミュレーション実行中...", total=None)
 
@@ -130,6 +164,8 @@ def multiplier_command(
     ] = 40,
 ) -> None:
     """財政乗数を計算"""
+    factory = get_model_factory()
+
     with Progress(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
@@ -137,8 +173,8 @@ def multiplier_command(
     ) as progress:
         progress.add_task("財政乗数を計算中...", total=None)
 
-        calibration = JapanCalibration.create()
-        model = DSGEModel(calibration.parameters)
+        calibration = factory.create_calibration()
+        model = factory.create_model(calibration)
         calc = FiscalMultiplierCalculator(model)
 
         if policy_type == "government_spending":
@@ -169,8 +205,9 @@ def multiplier_command(
 
 def steady_state_command() -> None:
     """定常状態を表示"""
-    calibration = JapanCalibration.create()
-    model = DSGEModel(calibration.parameters)
+    factory = get_model_factory()
+    calibration = factory.create_calibration()
+    model = factory.create_model(calibration)
     ss = model.steady_state
 
     console.print()
@@ -216,7 +253,8 @@ def steady_state_command() -> None:
 
 def parameters_command() -> None:
     """パラメータを表示"""
-    calibration = JapanCalibration.create()
+    factory = get_model_factory()
+    calibration = factory.create_calibration()
     params = calibration.parameters
 
     console.print()
@@ -279,9 +317,9 @@ def report_command(
     ] = None,
 ) -> None:
     """レポートを生成"""
-    from japan_fiscal_simulator.mcp.tools import get_context
+    from japan_fiscal_simulator.mcp.tools import ContextManager
 
-    ctx = get_context()
+    ctx = ContextManager.get()
 
     if ctx.latest_result is None:
         console.print(

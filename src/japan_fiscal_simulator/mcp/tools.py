@@ -28,9 +28,13 @@ from japan_fiscal_simulator.parameters.calibration import JapanCalibration
 class SimulationContext:
     """シミュレーションコンテキスト（状態管理）"""
 
-    def __init__(self) -> None:
-        self.calibration = JapanCalibration.create()
-        self.model = DSGEModel(self.calibration.parameters)
+    def __init__(
+        self,
+        calibration: JapanCalibration | None = None,
+        model: DSGEModel | None = None,
+    ) -> None:
+        self.calibration = calibration or JapanCalibration.create()
+        self.model = model or DSGEModel(self.calibration.parameters)
         self.latest_result: SimulationResult | None = None
         self.results_history: list[SimulationResult] = []
 
@@ -44,16 +48,32 @@ class SimulationContext:
         self.reset_model()
 
 
-# グローバルコンテキスト
-_context: SimulationContext | None = None
+class ContextManager:
+    """コンテキスト管理（DI対応）"""
+
+    _instance: SimulationContext | None = None
+
+    @classmethod
+    def get(cls) -> SimulationContext:
+        """コンテキストを取得（遅延初期化）"""
+        if cls._instance is None:
+            cls._instance = SimulationContext()
+        return cls._instance
+
+    @classmethod
+    def set(cls, context: SimulationContext) -> None:
+        """コンテキストを設定（テスト用）"""
+        cls._instance = context
+
+    @classmethod
+    def reset(cls) -> None:
+        """コンテキストをリセット（テスト用）"""
+        cls._instance = None
 
 
 def get_context() -> SimulationContext:
-    """コンテキストを取得"""
-    global _context
-    if _context is None:
-        _context = SimulationContext()
-    return _context
+    """コンテキストを取得（後方互換性のため維持）"""
+    return ContextManager.get()
 
 
 def simulate_policy(
@@ -62,6 +82,8 @@ def simulate_policy(
     periods: int = 40,
     shock_type: str = "temporary",
     scenario_name: str | None = None,
+    *,
+    context: SimulationContext | None = None,
 ) -> dict[str, Any]:
     """財政政策のインパルス応答シミュレーションを実行
 
@@ -71,12 +93,13 @@ def simulate_policy(
         periods: シミュレーション期間（四半期）
         shock_type: ショックタイプ（temporary, permanent, gradual）
         scenario_name: シナリオ名
+        context: シミュレーションコンテキスト（DI用、Noneの場合はグローバルを使用）
 
     Returns:
         シミュレーション結果のJSON
     """
     start_time = time.time()
-    ctx = get_context()
+    ctx = context or get_context()
 
     # ポリシータイプからショック名へのマッピング
     shock_mapping = {
@@ -226,6 +249,8 @@ def set_parameters(
     debt_ratio: float | None = None,
     interest_rate_smoothing: float | None = None,
     inflation_response: float | None = None,
+    *,
+    context: SimulationContext | None = None,
 ) -> dict[str, Any]:
     """モデルパラメータを設定
 
@@ -235,11 +260,12 @@ def set_parameters(
         debt_ratio: 政府債務/GDP比率
         interest_rate_smoothing: 金利平滑化パラメータ
         inflation_response: インフレ反応係数
+        context: シミュレーションコンテキスト（DI用）
 
     Returns:
         更新後のパラメータ
     """
-    ctx = get_context()
+    ctx = context or get_context()
 
     if consumption_tax_rate is not None:
         ctx.calibration = ctx.calibration.set_consumption_tax(consumption_tax_rate)
@@ -262,17 +288,20 @@ def set_parameters(
 def get_fiscal_multiplier(
     policy_type: str = "government_spending",
     horizon: int = 40,
+    *,
+    context: SimulationContext | None = None,
 ) -> dict[str, Any]:
     """財政乗数を計算
 
     Args:
         policy_type: 政策タイプ（government_spending, consumption_tax）
         horizon: 計算期間
+        context: シミュレーションコンテキスト（DI用）
 
     Returns:
         財政乗数の詳細
     """
-    ctx = get_context()
+    ctx = context or get_context()
     calc = FiscalMultiplierCalculator(ctx.model)
 
     if policy_type == "government_spending":
@@ -296,16 +325,20 @@ def get_fiscal_multiplier(
 
 def compare_scenarios(
     scenarios: list[dict[str, Any]],
+    *,
+    context: SimulationContext | None = None,
 ) -> dict[str, Any]:
     """複数シナリオを比較
 
     Args:
         scenarios: シナリオ定義のリスト
             各シナリオ: {"policy_type": str, "shock_size": float, "name": str}
+        context: シミュレーションコンテキスト（DI用）
 
     Returns:
         比較結果
     """
+    ctx = context or get_context()
     comparisons = []
 
     for scenario_def in scenarios:
@@ -313,6 +346,7 @@ def compare_scenarios(
             policy_type=scenario_def["policy_type"],
             shock_size=scenario_def["shock_size"],
             scenario_name=scenario_def.get("name"),
+            context=ctx,
         )
 
         irf = result["impulse_response"]["variables"]
@@ -354,17 +388,20 @@ def compare_scenarios(
 def generate_report(
     format: str = "markdown",
     include_graphs: bool = False,
+    *,
+    context: SimulationContext | None = None,
 ) -> dict[str, Any]:
     """最新のシミュレーション結果からレポートを生成
 
     Args:
         format: 出力形式（markdown, json）
         include_graphs: グラフを含めるか
+        context: シミュレーションコンテキスト（DI用）
 
     Returns:
         レポート内容
     """
-    ctx = get_context()
+    ctx = context or get_context()
 
     if ctx.latest_result is None:
         return {"error": "No simulation results available. Run simulate_policy first."}

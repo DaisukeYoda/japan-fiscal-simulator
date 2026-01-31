@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from japan_fiscal_simulator.mcp.tools import get_context
+from japan_fiscal_simulator.mcp.tools import SimulationContext, get_context
 from japan_fiscal_simulator.policies.consumption_tax import (
     SCENARIO_TAX_CUT_2PCT,
     SCENARIO_TAX_CUT_5PCT,
@@ -19,12 +19,18 @@ from japan_fiscal_simulator.policies.subsidies import (
 )
 
 
-def get_current_parameters() -> dict[str, Any]:
+def get_current_parameters(
+    *,
+    context: SimulationContext | None = None,
+) -> dict[str, Any]:
     """現在のパラメータを取得
 
     Resource URI: fiscal://parameters/current
+
+    Args:
+        context: シミュレーションコンテキスト（DI用）
     """
-    ctx = get_context()
+    ctx = context or get_context()
     params = ctx.calibration.parameters
 
     return {
@@ -65,12 +71,18 @@ def get_current_parameters() -> dict[str, Any]:
     }
 
 
-def get_steady_state() -> dict[str, Any]:
+def get_steady_state(
+    *,
+    context: SimulationContext | None = None,
+) -> dict[str, Any]:
     """定常状態値を取得
 
     Resource URI: fiscal://steady-state/current
+
+    Args:
+        context: シミュレーションコンテキスト（DI用）
     """
-    ctx = get_context()
+    ctx = context or get_context()
     ss = ctx.model.steady_state
 
     return {
@@ -175,12 +187,18 @@ def get_scenarios_list() -> dict[str, Any]:
     return {"scenarios": scenarios, "count": len(scenarios)}
 
 
-def get_latest_results() -> dict[str, Any]:
+def get_latest_results(
+    *,
+    context: SimulationContext | None = None,
+) -> dict[str, Any]:
     """最新シミュレーション結果を取得
 
     Resource URI: fiscal://results/latest
+
+    Args:
+        context: シミュレーションコンテキスト（DI用）
     """
-    ctx = get_context()
+    ctx = context or get_context()
 
     if ctx.latest_result is None:
         return {"available": False, "message": "No simulation results available yet."}
@@ -203,12 +221,18 @@ def get_latest_results() -> dict[str, Any]:
     }
 
 
-def get_results_history() -> dict[str, Any]:
+def get_results_history(
+    *,
+    context: SimulationContext | None = None,
+) -> dict[str, Any]:
     """シミュレーション履歴を取得
 
     Resource URI: fiscal://results/history
+
+    Args:
+        context: シミュレーションコンテキスト（DI用）
     """
-    ctx = get_context()
+    ctx = context or get_context()
 
     history = []
     for result in ctx.results_history[-10:]:  # 最新10件

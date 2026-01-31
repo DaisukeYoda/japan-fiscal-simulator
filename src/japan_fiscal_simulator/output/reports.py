@@ -10,8 +10,8 @@ if TYPE_CHECKING:
     from japan_fiscal_simulator.output.schemas import ComparisonResult, SimulationResult
 
 
-# レポートテンプレート（Markdown）
-REPORT_TEMPLATE = """# {{ title }}
+# デフォルトのレポートテンプレート（Markdown）
+DEFAULT_REPORT_TEMPLATE = """# {{ title }}
 
 生成日時: {{ generated_at }}
 
@@ -102,11 +102,20 @@ REPORT_TEMPLATE = """# {{ title }}
 class ReportGenerator:
     """分析レポートの生成"""
 
-    def __init__(self, output_dir: Path | str | None = None) -> None:
+    def __init__(
+        self,
+        output_dir: Path | str | None = None,
+        template: str | None = None,
+    ) -> None:
+        """
+        Args:
+            output_dir: 出力ディレクトリ
+            template: カスタムテンプレート文字列（Noneの場合はデフォルトを使用）
+        """
         self.output_dir = Path(output_dir) if output_dir else Path("./output/reports")
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.env = Environment(loader=BaseLoader())
-        self.template = self.env.from_string(REPORT_TEMPLATE)
+        self.template = self.env.from_string(template or DEFAULT_REPORT_TEMPLATE)
 
     def generate_simulation_report(
         self,

@@ -1,5 +1,6 @@
 """グラフ生成"""
 
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -11,24 +12,8 @@ if TYPE_CHECKING:
     from japan_fiscal_simulator.core.simulation import ImpulseResponseResult
 
 
-# 日本語フォント設定（利用可能な場合）
-def setup_japanese_font() -> None:
-    """日本語フォントを設定"""
-    japanese_fonts = ["Hiragino Sans", "Yu Gothic", "Meiryo", "Takao Gothic"]
-    for font in japanese_fonts:
-        try:
-            matplotlib.rcParams["font.family"] = font
-            return
-        except Exception:
-            continue
-    # フォールバック
-    matplotlib.rcParams["font.family"] = "sans-serif"
-
-
-setup_japanese_font()
-
-# グラフスタイル設定
-STYLE_CONFIG = {
+# デフォルトのグラフスタイル設定
+DEFAULT_STYLE_CONFIG: dict[str, object] = {
     "figure.figsize": (12, 8),
     "axes.grid": True,
     "grid.alpha": 0.3,
@@ -38,10 +23,8 @@ STYLE_CONFIG = {
     "legend.fontsize": 10,
 }
 
-plt.rcParams.update(STYLE_CONFIG)
-
-# カラーパレット
-COLORS = {
+# デフォルトのカラーパレット
+DEFAULT_COLORS: dict[str, str] = {
     "output": "#1f77b4",  # 青
     "consumption": "#ff7f0e",  # オレンジ
     "investment": "#2ca02c",  # 緑
@@ -52,8 +35,8 @@ COLORS = {
     "wage": "#7f7f7f",  # グレー
 }
 
-# 変数の日本語ラベル
-VARIABLE_LABELS = {
+# デフォルトの変数ラベル
+DEFAULT_VARIABLE_LABELS: dict[str, str] = {
     "y": "産出（GDP）",
     "c": "消費",
     "i": "投資",
@@ -72,13 +55,51 @@ VARIABLE_LABELS = {
     "nw": "純資産",
 }
 
+# 日本語フォント候補
+JAPANESE_FONTS = ["Hiragino Sans", "Yu Gothic", "Meiryo", "Takao Gothic"]
+
+
+@dataclass
+class GraphStyle:
+    """グラフスタイル設定"""
+
+    style_config: dict[str, object] = field(default_factory=lambda: dict(DEFAULT_STYLE_CONFIG))
+    colors: dict[str, str] = field(default_factory=lambda: dict(DEFAULT_COLORS))
+    variable_labels: dict[str, str] = field(default_factory=lambda: dict(DEFAULT_VARIABLE_LABELS))
+    font_family: str | None = None
+
+    def apply(self) -> None:
+        """スタイルをmatplotlibに適用"""
+        # 日本語フォント設定
+        if self.font_family:
+            matplotlib.rcParams["font.family"] = self.font_family
+        else:
+            for font in JAPANESE_FONTS:
+                try:
+                    matplotlib.rcParams["font.family"] = font
+                    break
+                except Exception:
+                    continue
+            else:
+                matplotlib.rcParams["font.family"] = "sans-serif"
+
+        # スタイル設定を適用
+        plt.rcParams.update(self.style_config)
+
 
 class GraphGenerator:
     """インパルス応答グラフの生成"""
 
-    def __init__(self, output_dir: Path | str | None = None) -> None:
+    def __init__(
+        self,
+        output_dir: Path | str | None = None,
+        style: GraphStyle | None = None,
+    ) -> None:
         self.output_dir = Path(output_dir) if output_dir else Path("./output/graphs")
         self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.style = style or GraphStyle()
+        # スタイルを適用
+        self.style.apply()
 
     def plot_impulse_response(
         self,
@@ -118,8 +139,8 @@ class GraphGenerator:
             ax = axes[row, col]
 
             response = result.get_response(var)
-            color = COLORS.get(var.replace("_", ""), "#1f77b4")
-            label = VARIABLE_LABELS.get(var, var)
+            color = self.style.colors.get(var.replace("_", ""), "#1f77b4")
+            label = self.style.variable_labels.get(var, var)
 
             ax.plot(time_axis, response * 100, color=color, linewidth=2)
             ax.axhline(y=0, color="black", linestyle="-", linewidth=0.5)
@@ -193,7 +214,7 @@ class GraphGenerator:
         ax.set_xlabel("四半期")
         ax.set_ylabel("定常状態からの乖離（%）")
 
-        var_label = VARIABLE_LABELS.get(variable, variable)
+        var_label = self.style.variable_labels.get(variable, variable)
         if title is None:
             title = f"{var_label}の応答比較"
         ax.set_title(title)
@@ -226,12 +247,12 @@ class GraphGenerator:
         time_axis = np.arange(periods)
 
         # 左: 産出と政府支出の応答
-        ax1.plot(time_axis, y_response * 100, label="産出（Y）", color=COLORS["output"])
+        ax1.plot(time_axis, y_response * 100, label="産出（Y）", color=self.style.colors["output"])
         ax1.plot(
             time_axis,
             g_response * 100,
             label="政府支出（G）",
-            color=COLORS["debt"],
+            color=self.style.colors["debt"],
             linestyle="--",
         )
         ax1.axhline(y=0, color="black", linestyle="-", linewidth=0.5)
@@ -252,7 +273,7 @@ class GraphGenerator:
                 0,
             )
 
-        ax2.plot(time_axis, cumulative_multiplier, color=COLORS["output"], linewidth=2)
+        ax2.plot(time_axis, cumulative_multiplier, color=self.style.colors["output"], linewidth=2)
         ax2.axhline(y=1, color="gray", linestyle="--", linewidth=1, label="乗数 = 1")
         ax2.set_xlabel("四半期")
         ax2.set_ylabel("累積財政乗数")

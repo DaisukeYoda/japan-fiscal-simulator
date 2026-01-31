@@ -1,0 +1,45 @@
+{
+  "version": "1.0.0",
+  "author": "Python Best Practices",
+  "abstract": "Python development tooling configuration and best practices. Covers analysis, linters, type checkers, formatters, test frameworks, and package managers.",
+  "categories": 6,
+  "rules": 7,
+  "sections": [
+    {
+      "prefix": "analysis",
+      "name": "Analysis",
+      "impact": "HIGH",
+      "count": 1
+    },
+    {
+      "prefix": "lint",
+      "name": "Linting",
+      "impact": "CRITICAL",
+      "count": 1
+    },
+    {
+      "prefix": "type",
+      "name": "Type Checking",
+      "impact": "HIGH",
+      "count": 1
+    },
+    {
+      "prefix": "fmt",
+      "name": "Formatting",
+      "impact": "HIGH",
+      "count": 1
+    },
+    {
+      "prefix": "test",
+      "name": "Testing",
+      "impact": "HIGH",
+      "count": 1
+    },
+    {
+      "prefix": "pkg",
+      "name": "Package Management",
+      "impact": "MEDIUM",
+      "count": 2
+    }
+  ]
+}

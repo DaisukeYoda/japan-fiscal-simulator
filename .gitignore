@@ -19,3 +19,7 @@ build/
 
 # OS
 .DS_Store
+
+# Local config
+.claude/
+.pyscn/

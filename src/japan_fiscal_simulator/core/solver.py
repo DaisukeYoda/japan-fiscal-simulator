@@ -107,7 +107,7 @@ class BlanchardKahnSolver:
             eigenvalues = np.where(np.abs(beta) > tol, alpha / beta, np.inf)
 
         # 安定・不安定固有値のカウント
-        n_stable = np.sum(np.abs(eigenvalues) < 1 - tol)
+        n_stable = np.sum(np.abs(eigenvalues) < 1 - tol).item()
         n_unstable = 2 * n - n_stable
 
         # Blanchard-Kahn条件のチェック
@@ -130,8 +130,8 @@ class BlanchardKahnSolver:
         return BlanchardKahnResult(
             P=P,
             Q=Q_mat,
-            n_stable=int(n_stable),
-            n_unstable=int(n_unstable),
+            n_stable=n_stable,
+            n_unstable=n_unstable,
             n_predetermined=self.n_predetermined,
             bk_satisfied=bk_satisfied,
             eigenvalues=eigenvalues,
@@ -147,7 +147,6 @@ class BlanchardKahnSolver:
         tol: float,
     ) -> tuple[np.ndarray, np.ndarray]:
         """政策関数行列を抽出"""
-        n_stable = int(n_stable)
 
         # Zを分割
         Z11 = Z[:n, :n_stable]

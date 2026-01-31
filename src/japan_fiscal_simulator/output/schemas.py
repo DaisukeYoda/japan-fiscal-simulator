@@ -40,8 +40,8 @@ class VariableTimeSeries(BaseModel):
     @classmethod
     def convert_numpy(cls, v: Any) -> list[float]:
         if isinstance(v, np.ndarray):
-            return v.tolist()
-        return v
+            return list(v.tolist())
+        return list(v) if not isinstance(v, list) else v
 
 
 class SteadyStateValues(BaseModel):

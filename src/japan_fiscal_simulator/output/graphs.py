@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.figure import Figure
 
 if TYPE_CHECKING:
     from japan_fiscal_simulator.core.simulation import ImpulseResponseResult
@@ -108,7 +109,7 @@ class GraphGenerator:
         title: str | None = None,
         save_path: Path | str | None = None,
         show: bool = False,
-    ) -> plt.Figure:
+    ) -> Figure:
         """インパルス応答をプロット
 
         Args:
@@ -187,7 +188,7 @@ class GraphGenerator:
         title: str | None = None,
         save_path: Path | str | None = None,
         show: bool = False,
-    ) -> plt.Figure:
+    ) -> Figure:
         """複数シナリオの比較プロット
 
         Args:
@@ -203,7 +204,8 @@ class GraphGenerator:
         if labels is None:
             labels = [f"シナリオ {i + 1}" for i in range(len(results))]
 
-        colors = plt.cm.tab10(np.linspace(0, 1, len(results)))
+        cmap = plt.get_cmap("tab10")
+        colors = [cmap(i) for i in np.linspace(0, 1, len(results))]
 
         for idx, (result, label) in enumerate(zip(results, labels, strict=True)):
             response = result.get_response(variable)
@@ -239,7 +241,7 @@ class GraphGenerator:
         title: str = "財政乗数の時間推移",
         save_path: Path | str | None = None,
         show: bool = False,
-    ) -> plt.Figure:
+    ) -> Figure:
         """財政乗数の時間推移をプロット"""
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
 

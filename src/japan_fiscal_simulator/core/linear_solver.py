@@ -109,7 +109,7 @@ class LinearRESolver:
             eigenvalues = np.where(np.abs(beta) > tol, alpha / beta, np.inf * np.sign(alpha))
 
         # 安定・不安定固有値のカウント
-        n_stable = np.sum(np.abs(eigenvalues) < 1.0 - tol)
+        n_stable = np.sum(np.abs(eigenvalues) < 1.0 - tol).item()
         n_unstable = 2 * n - n_stable
 
         # Blanchard-Kahn条件: 不安定固有値の数 = 制御変数の数
@@ -123,7 +123,7 @@ class LinearRESolver:
         # 解の抽出
         # Z を分割: Z = [[Z11, Z12], [Z21, Z22]]
         # 安定部分空間に対応する部分を使う
-        ns = int(n_stable)
+        ns = n_stable
 
         Z11 = Z[:n, :ns]  # y_t の安定部分
 
@@ -196,8 +196,8 @@ class LinearRESolver:
             R=R,
             S=S,
             eigenvalues=eigenvalues,
-            n_stable=int(n_stable),
-            n_unstable=int(n_unstable),
+            n_stable=n_stable,
+            n_unstable=n_unstable,
             n_state=self.n_state,
             n_control=self.n_control,
             bk_satisfied=True,
@@ -218,8 +218,8 @@ class LinearRESolver:
             R=np.zeros((self.n_control, self.n_state)),
             S=np.zeros((self.n_control, self.n_shock)),
             eigenvalues=eigenvalues if eigenvalues is not None else np.array([]),
-            n_stable=int(n_stable),
-            n_unstable=int(n_unstable),
+            n_stable=n_stable,
+            n_unstable=n_unstable,
             n_state=self.n_state,
             n_control=self.n_control,
             bk_satisfied=False,

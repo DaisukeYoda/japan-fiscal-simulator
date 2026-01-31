@@ -12,6 +12,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Install dependencies
 uv sync
 
+# Add packages (updates pyproject.toml + installs)
+uv add <package>          # runtime dependency
+uv add --dev <package>    # dev dependency
+
 # Run all tests
 uv run pytest
 

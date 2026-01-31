@@ -325,4 +325,4 @@ class SteadyStateSolver:
         errors.append(abs(ss.investment - firm.delta * ss.capital))
 
         max_error = max(errors)
-        return max_error < tol
+        return bool(max_error < tol)

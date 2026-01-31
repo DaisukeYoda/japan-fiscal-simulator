@@ -234,8 +234,8 @@ class FiscalMultiplierCalculator:
             y_cum = np.sum(y_response[:h])
             policy_cum = np.sum(policy_response[:h])
             if abs(policy_cum) > 1e-10:
-                return y_cum / policy_cum / policy_ratio
-            return y_cum / (0.01 * h) / policy_ratio
+                return float(y_cum / policy_cum / policy_ratio)
+            return float(y_cum / (0.01 * h) / policy_ratio)
 
         cumulative_4q = cumulative_mult(4)
         cumulative_8q = cumulative_mult(8)

@@ -39,19 +39,26 @@ class DefaultModelFactory:
         return DSGEModel(calibration.parameters)
 
 
-# デフォルトファクトリ（テスト時に差し替え可能）
-_model_factory: ModelFactory = DefaultModelFactory()
+class ModelFactoryManager:
+    """モデルファクトリ管理（DI用）"""
 
+    _instance: ModelFactory | None = None
 
-def set_model_factory(factory: ModelFactory) -> None:
-    """モデルファクトリを設定（テスト用）"""
-    global _model_factory
-    _model_factory = factory
+    @classmethod
+    def get(cls) -> ModelFactory:
+        if cls._instance is None:
+            cls._instance = DefaultModelFactory()
+        return cls._instance
 
+    @classmethod
+    def set(cls, factory: ModelFactory) -> None:
+        """テスト用にファクトリを設定"""
+        cls._instance = factory
 
-def get_model_factory() -> ModelFactory:
-    """現在のモデルファクトリを取得"""
-    return _model_factory
+    @classmethod
+    def reset(cls) -> None:
+        """テスト用にリセット"""
+        cls._instance = None
 
 
 def simulate_command(
@@ -77,7 +84,7 @@ def simulate_command(
     ] = None,
 ) -> None:
     """財政政策シミュレーションを実行"""
-    factory = get_model_factory()
+    factory = ModelFactoryManager.get()
 
     with Progress(
         SpinnerColumn(),
@@ -165,7 +172,7 @@ def multiplier_command(
     ] = 40,
 ) -> None:
     """財政乗数を計算"""
-    factory = get_model_factory()
+    factory = ModelFactoryManager.get()
 
     with Progress(
         SpinnerColumn(),
@@ -206,7 +213,7 @@ def multiplier_command(
 
 def steady_state_command() -> None:
     """定常状態を表示"""
-    factory = get_model_factory()
+    factory = ModelFactoryManager.get()
     calibration = factory.create_calibration()
     model = factory.create_model(calibration)
     ss = model.steady_state
@@ -254,7 +261,7 @@ def steady_state_command() -> None:
 
 def parameters_command() -> None:
     """パラメータを表示"""
-    factory = get_model_factory()
+    factory = ModelFactoryManager.get()
     calibration = factory.create_calibration()
     params = calibration.parameters
 

@@ -91,9 +91,25 @@ class DefaultParameters:
     financial: FinancialParameters = field(default_factory=FinancialParameters)
     shocks: ShockParameters = field(default_factory=ShockParameters)
 
-    def with_updates(self, **kwargs: dict) -> Self:
+    def with_updates(
+        self,
+        household: HouseholdParameters | None = None,
+        firm: FirmParameters | None = None,
+        government: GovernmentParameters | None = None,
+        central_bank: CentralBankParameters | None = None,
+        financial: FinancialParameters | None = None,
+        shocks: ShockParameters | None = None,
+    ) -> Self:
         """パラメータの一部を更新した新しいインスタンスを返す"""
-        return replace(self, **kwargs)
+        return replace(
+            self,
+            household=household if household is not None else self.household,
+            firm=firm if firm is not None else self.firm,
+            government=government if government is not None else self.government,
+            central_bank=central_bank if central_bank is not None else self.central_bank,
+            financial=financial if financial is not None else self.financial,
+            shocks=shocks if shocks is not None else self.shocks,
+        )
 
 
 # 定数定義

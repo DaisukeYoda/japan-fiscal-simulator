@@ -1,6 +1,7 @@
 """MCPサーバー本体"""
 
 import json
+from collections.abc import Callable
 from typing import Any
 
 from mcp.server import Server
@@ -10,6 +11,7 @@ from mcp.types import (
     TextContent,
     Tool,
 )
+from pydantic import AnyUrl
 
 from japan_fiscal_simulator.mcp.resources import (
     get_current_parameters,
@@ -31,7 +33,7 @@ def create_server() -> Server:
     """MCPサーバーを作成"""
     server = Server("japan-fiscal-dsge")
 
-    @server.list_tools()
+    @server.list_tools()  # type: ignore[no-untyped-call, untyped-decorator]
     async def list_tools() -> list[Tool]:
         """利用可能なツールを列挙"""
         return [
@@ -169,7 +171,7 @@ def create_server() -> Server:
             ),
         ]
 
-    @server.call_tool()
+    @server.call_tool()  # type: ignore[untyped-decorator]
     async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
         """ツールを実行"""
         try:
@@ -194,46 +196,46 @@ def create_server() -> Server:
         except Exception as e:
             return [TextContent(type="text", text=json.dumps({"error": str(e)}))]
 
-    @server.list_resources()
+    @server.list_resources()  # type: ignore[no-untyped-call, untyped-decorator]
     async def list_resources() -> list[Resource]:
         """リソース一覧"""
         return [
             Resource(
-                uri="fiscal://parameters/current",
+                uri=AnyUrl("fiscal://parameters/current"),
                 name="Current Parameters",
                 description="現在のモデルパラメータ",
                 mimeType="application/json",
             ),
             Resource(
-                uri="fiscal://steady-state/current",
+                uri=AnyUrl("fiscal://steady-state/current"),
                 name="Steady State",
                 description="現在の定常状態値",
                 mimeType="application/json",
             ),
             Resource(
-                uri="fiscal://scenarios/list",
+                uri=AnyUrl("fiscal://scenarios/list"),
                 name="Scenarios List",
                 description="定義済みシナリオ一覧",
                 mimeType="application/json",
             ),
             Resource(
-                uri="fiscal://results/latest",
+                uri=AnyUrl("fiscal://results/latest"),
                 name="Latest Results",
                 description="最新のシミュレーション結果",
                 mimeType="application/json",
             ),
             Resource(
-                uri="fiscal://results/history",
+                uri=AnyUrl("fiscal://results/history"),
                 name="Results History",
                 description="シミュレーション履歴",
                 mimeType="application/json",
             ),
         ]
 
-    @server.read_resource()
+    @server.read_resource()  # type: ignore[no-untyped-call, untyped-decorator]
     async def read_resource(uri: str) -> str:
         """リソースを読み取り"""
-        resource_handlers = {
+        resource_handlers: dict[str, Callable[[], dict[str, Any]]] = {
             "fiscal://parameters/current": get_current_parameters,
             "fiscal://steady-state/current": get_steady_state,
             "fiscal://scenarios/list": get_scenarios_list,
@@ -242,7 +244,7 @@ def create_server() -> Server:
         }
 
         handler = resource_handlers.get(uri)
-        if handler:
+        if handler is not None:
             return json.dumps(handler(), ensure_ascii=False, indent=2)
 
         return json.dumps({"error": f"Unknown resource: {uri}"})

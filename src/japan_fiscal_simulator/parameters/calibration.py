@@ -1,7 +1,6 @@
 """日本経済向けキャリブレーション"""
 
 from dataclasses import dataclass, replace
-from typing import Self
 
 from japan_fiscal_simulator.parameters.defaults import (
     CentralBankParameters,
@@ -21,7 +20,7 @@ class JapanCalibration:
     parameters: DefaultParameters
 
     @classmethod
-    def create(cls) -> Self:
+    def create(cls) -> JapanCalibration:
         """日本経済向けデフォルトキャリブレーションを作成"""
         params = DefaultParameters(
             household=HouseholdParameters(
@@ -66,30 +65,30 @@ class JapanCalibration:
         return cls(parameters=params)
 
     @classmethod
-    def create_high_debt_scenario(cls) -> Self:
+    def create_high_debt_scenario(cls) -> JapanCalibration:
         """高債務シナリオ"""
         base = cls.create()
         new_gov = replace(base.parameters.government, b_y_ratio=2.50, phi_b=0.03)
         return cls(parameters=base.parameters.with_updates(government=new_gov))
 
     @classmethod
-    def create_zlb_scenario(cls) -> Self:
+    def create_zlb_scenario(cls) -> JapanCalibration:
         """ゼロ金利制約シナリオ"""
         base = cls.create()
         new_cb = replace(base.parameters.central_bank, r_lower_bound=0.0, rho_r=0.95)
         return cls(parameters=base.parameters.with_updates(central_bank=new_cb))
 
-    def set_consumption_tax(self, rate: float) -> Self:
+    def set_consumption_tax(self, rate: float) -> JapanCalibration:
         """消費税率を変更"""
         new_gov = replace(self.parameters.government, tau_c=rate)
         return JapanCalibration(parameters=self.parameters.with_updates(government=new_gov))
 
-    def set_government_spending_ratio(self, ratio: float) -> Self:
+    def set_government_spending_ratio(self, ratio: float) -> JapanCalibration:
         """政府支出/GDP比率を変更"""
         new_gov = replace(self.parameters.government, g_y_ratio=ratio)
         return JapanCalibration(parameters=self.parameters.with_updates(government=new_gov))
 
-    def set_transfer_ratio(self, ratio: float) -> Self:
+    def set_transfer_ratio(self, ratio: float) -> JapanCalibration:
         """移転支払い/GDP比率を変更"""
         new_gov = replace(self.parameters.government, transfer_y_ratio=ratio)
         return JapanCalibration(parameters=self.parameters.with_updates(government=new_gov))

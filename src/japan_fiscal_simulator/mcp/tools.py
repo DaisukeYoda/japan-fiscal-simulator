@@ -377,13 +377,13 @@ def compare_scenarios(
     best_output = max(comparisons, key=lambda x: x.impact_on_output)
     summary = f"産出効果が最も大きいのは「{best_output.scenario_name}」（{best_output.impact_on_output:.2f}%）です。"
 
-    result = ComparisonResult(
+    comparison_result = ComparisonResult(
         baseline_scenario=scenarios[0].get("name", "baseline"),
         comparisons=comparisons,
         summary=summary,
     )
 
-    return result.model_dump()
+    return comparison_result.model_dump()
 
 
 def generate_report(

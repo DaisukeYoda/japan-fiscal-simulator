@@ -6,9 +6,12 @@
 import numpy as np
 import pytest
 
-from japan_fiscal_simulator.core.model import DSGEModel, N_VARIABLES, N_SHOCKS
+from japan_fiscal_simulator.core.model import N_SHOCKS, N_VARIABLES, DSGEModel
 from japan_fiscal_simulator.core.nk_model import NewKeynesianModel
-from japan_fiscal_simulator.core.simulation import ImpulseResponseSimulator, FiscalMultiplierCalculator
+from japan_fiscal_simulator.core.simulation import (
+    FiscalMultiplierCalculator,
+    ImpulseResponseSimulator,
+)
 from japan_fiscal_simulator.parameters.defaults import DefaultParameters
 
 

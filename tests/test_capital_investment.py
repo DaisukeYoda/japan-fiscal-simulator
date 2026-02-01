@@ -96,6 +96,17 @@ class TestInvestmentAdjustment:
         # S''が大きいほど、qの係数が小さくなる
         assert coef.q_current == pytest.approx(-0.1)
 
+    def test_low_adjustment_cost(self) -> None:
+        """低い調整コストのテスト（投資がqに敏感）"""
+        S_double_prime = 0.5
+        params = InvestmentAdjustmentParameters(S_double_prime=S_double_prime)
+        eq = InvestmentAdjustmentEquation(params)
+
+        coef = eq.coefficients()
+
+        # S''が小さいほど、qの係数が大きくなる
+        assert coef.q_current == pytest.approx(-2.0)
+
     def test_name_and_description(self) -> None:
         """名前と説明のテスト"""
         params = InvestmentAdjustmentParameters(S_double_prime=5.0)

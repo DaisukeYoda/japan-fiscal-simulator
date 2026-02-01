@@ -1,7 +1,10 @@
 """資本蓄積方程式
 
-資本蓄積の法則:
-k_t = (1-δ) × k_{t-1} + δ × i_t
+資本蓄積の法則（対数線形化済み）:
+k̂_t = (1-δ) × k̂_{t-1} + δ × î_t
+
+水準での方程式 K_t = (1-δ)K_{t-1} + I_t を対数線形化。
+定常状態で I̅ = δK̅ となるため、δ係数が現れる。
 
 標準化形式（=0）:
 k_t - (1-δ) × k_{t-1} - δ × i_t = 0
@@ -20,11 +23,14 @@ class CapitalAccumulationParameters:
 
 
 class CapitalAccumulation:
-    """資本蓄積方程式
+    """資本蓄積方程式（対数線形化済み）
 
-    k_t = (1-δ) × k_{t-1} + δ × i_t
+    k̂_t = (1-δ)k̂_{t-1} + δî_t
 
-    標準化形式: k_t - (1-δ)×k_{t-1} - δ×i_t = 0
+    水準 K_t = (1-δ)K_{t-1} + I_t の対数線形化。
+    定常状態で I̅ = δK̅ のため、投資にδ係数がかかる。
+
+    標準化形式: k_t - (1-δ)k_{t-1} - δi_t = 0
     """
 
     def __init__(self, params: CapitalAccumulationParameters) -> None:

@@ -63,9 +63,15 @@ class FinancialParameters:
 
 @dataclass(frozen=True)
 class InvestmentParameters:
-    """投資パラメータ"""
+    """投資パラメータ
 
-    S_double_prime: float = 5.0  # 投資調整コスト曲率
+    参考文献:
+    - Smets & Wouters (2007): S'' ≈ 5.48
+    - Christiano, Eichenbaum & Evans (2005): S'' ≈ 2.5
+    """
+
+    # 投資調整コスト曲率: Smets-Wouters (2007) の推定値 5.48 を参考に設定
+    S_double_prime: float = 5.0
 
 
 @dataclass(frozen=True)
@@ -78,7 +84,8 @@ class ShockParameters:
     rho_tau_c: float = 0.95  # 消費税ショック
     rho_m: float = 0.50  # 金融政策ショック
     rho_risk: float = 0.75  # リスクプレミアムショック
-    rho_i: float = 0.70  # 投資固有技術ショック
+    # 投資固有技術ショック: Smets-Wouters (2007) では ρ_i ≈ 0.71
+    rho_i: float = 0.70
 
     # 標準偏差
     sigma_a: float = 0.01

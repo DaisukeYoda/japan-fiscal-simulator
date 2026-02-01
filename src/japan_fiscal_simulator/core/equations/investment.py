@@ -72,7 +72,7 @@ class InvestmentAdjustmentEquation:
     i_t = i_{t-1} + (1/S'') × q_t + e_i,t
 
     投資調整コストにより、投資はTobin's Qに対して
-    緩やかに反応する。S''が大きいほど調整が遅い。
+    緩やかに反応する。S''が大きいほど投資がqに対して鈍感になる。
 
     標準化形式: i_t - i_{t-1} - (1/S'')×q_t - e_i,t = 0
     """

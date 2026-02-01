@@ -78,3 +78,12 @@ This project follows Python best practices:
 - Type hints on all functions and methods
 - Dataclasses for data structures
 - Protocol-based interfaces over inheritance
+
+## PR and Commit guideline
+
+PRは日本語で行う。コミット文は簡潔に書く（多くても2-3行）。
+
+
+## Roadmap
+
+@docs/ROADMAP_CENTRAL_BANK_LEVEL.md

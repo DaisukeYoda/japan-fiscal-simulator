@@ -62,6 +62,13 @@ class FinancialParameters:
 
 
 @dataclass(frozen=True)
+class InvestmentParameters:
+    """投資パラメータ"""
+
+    S_double_prime: float = 5.0  # 投資調整コスト曲率
+
+
+@dataclass(frozen=True)
 class ShockParameters:
     """ショックパラメータ"""
 
@@ -71,6 +78,7 @@ class ShockParameters:
     rho_tau_c: float = 0.95  # 消費税ショック
     rho_m: float = 0.50  # 金融政策ショック
     rho_risk: float = 0.75  # リスクプレミアムショック
+    rho_i: float = 0.70  # 投資固有技術ショック
 
     # 標準偏差
     sigma_a: float = 0.01
@@ -78,6 +86,7 @@ class ShockParameters:
     sigma_tau_c: float = 0.005
     sigma_m: float = 0.0025
     sigma_risk: float = 0.01
+    sigma_i: float = 0.01
 
 
 @dataclass
@@ -89,6 +98,7 @@ class DefaultParameters:
     government: GovernmentParameters = field(default_factory=GovernmentParameters)
     central_bank: CentralBankParameters = field(default_factory=CentralBankParameters)
     financial: FinancialParameters = field(default_factory=FinancialParameters)
+    investment: InvestmentParameters = field(default_factory=InvestmentParameters)
     shocks: ShockParameters = field(default_factory=ShockParameters)
 
     def with_updates(
@@ -98,6 +108,7 @@ class DefaultParameters:
         government: GovernmentParameters | None = None,
         central_bank: CentralBankParameters | None = None,
         financial: FinancialParameters | None = None,
+        investment: InvestmentParameters | None = None,
         shocks: ShockParameters | None = None,
     ) -> Self:
         """パラメータの一部を更新した新しいインスタンスを返す"""
@@ -108,6 +119,7 @@ class DefaultParameters:
             government=government if government is not None else self.government,
             central_bank=central_bank if central_bank is not None else self.central_bank,
             financial=financial if financial is not None else self.financial,
+            investment=investment if investment is not None else self.investment,
             shocks=shocks if shocks is not None else self.shocks,
         )
 

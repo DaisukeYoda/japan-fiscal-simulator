@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 VARIABLE_INDICES = {
     "y": 0,  # 産出
     "c": 1,  # 消費
-    "i": 2,  # 投資
+    "i": 2,  # 投資（先決）
     "n": 3,  # 労働
     "k": 4,  # 資本（先決）
     "pi": 5,  # インフレ率
@@ -34,16 +34,18 @@ VARIABLE_INDICES = {
     "b": 11,  # 政府債務（先決）
     "tau_c": 12,  # 消費税率（先決）
     "a": 13,  # 技術ショック（先決）
+    "q": 14,  # Tobin's Q
+    "rk": 15,  # 資本収益率
 }
 
 N_VARIABLES = len(VARIABLE_INDICES)
 
 # 先決変数
-PREDETERMINED_VARS = ["k", "g", "b", "tau_c", "a"]
+PREDETERMINED_VARS = ["k", "i", "g", "b", "tau_c", "a"]
 N_PREDETERMINED = len(PREDETERMINED_VARS)
 
 # ショック変数
-SHOCK_VARS = ["e_a", "e_g", "e_m", "e_tau", "e_risk"]
+SHOCK_VARS = ["e_a", "e_g", "e_m", "e_tau", "e_risk", "e_i"]
 N_SHOCKS = len(SHOCK_VARS)
 
 
@@ -118,13 +120,15 @@ class DSGEModel:
     def _build_policy_function(self) -> PolicyFunctionResult:
         """NKモデルの解を拡張して政策関数を構築
 
-        NKモデルの5変数 (g, a, y, π, r) から
-        14変数システムへ拡張する。
+        NKモデルの8変数 (g, a, k, i, y, π, r, q) から
+        16変数システムへ拡張する。
         """
         nk_sol = self.nk_model.solution
+        hh = self.params.household
         firm = self.params.firm
         gov = self.params.government
         cb = self.params.central_bank
+        inv = self.params.investment
         shocks = self.params.shocks
 
         # 導出係数を取得
@@ -137,27 +141,38 @@ class DSGEModel:
         # 状態遷移行列 P
         P = np.zeros((n, n))
 
-        # NKモデルからの主要変数の遷移
-        # 状態変数: g, a
+        # NKモデルからの状態遷移行列を取得
+        # nk_sol.P は (4 x 4): [g, a, k, i] x [g, a, k, i]
+        nk_P = nk_sol.P
         rho_g = shocks.rho_g
         rho_a = shocks.rho_a
+        rho_i = shocks.rho_i
 
-        P[idx["g"], idx["g"]] = rho_g
-        P[idx["a"], idx["a"]] = rho_a
+        # 外生状態変数
+        P[idx["g"], idx["g"]] = nk_P[0, 0]  # rho_g
+        P[idx["a"], idx["a"]] = nk_P[1, 1]  # rho_a
 
-        # 制御変数: y, pi, r は状態変数に依存
-        # R行列から係数を取得: [y, π, r] = R @ [g, a]
-        R = nk_sol.R  # (3 x 2): [y, π, r] x [g, a]
+        # 資本蓄積: k_t = (1-δ)k_{t-1} + δ×i_t
+        P[idx["k"], idx["k"]] = nk_P[2, 2]  # 1 - delta
+        P[idx["k"], idx["i"]] = nk_P[2, 3]  # delta
 
-        # 産出
-        P[idx["y"], idx["g"]] = R[0, 0] * rho_g  # y_{t+1} は g_t に依存
+        # 投資持続性
+        P[idx["i"], idx["i"]] = nk_P[3, 3]  # rho_i
+
+        # NKモデルのR行列: (4 x 4): [y, π, r, q] x [g, a, k, i]
+        R = nk_sol.R
+
+        # 制御変数の状態依存（次期の状態から計算）
+        # y_{t+1} は状態変数 g_t, a_t に依存
+        P[idx["y"], idx["g"]] = R[0, 0] * rho_g
         P[idx["y"], idx["a"]] = R[0, 1] * rho_a
+        P[idx["y"], idx["i"]] = R[0, 3] * rho_i
 
-        # インフレ
+        # π_{t+1}
         P[idx["pi"], idx["g"]] = R[1, 0] * rho_g
         P[idx["pi"], idx["a"]] = R[1, 1] * rho_a
 
-        # 名目金利（NKモデルのrは実質金利だが、Taylor則では名目として扱う）
+        # 名目金利
         P[idx["R"], idx["g"]] = R[2, 0] * rho_g
         P[idx["R"], idx["a"]] = R[2, 1] * rho_a
 
@@ -165,21 +180,30 @@ class DSGEModel:
         P[idx["r"], idx["R"]] = 1.0
         P[idx["r"], idx["pi"]] = -1.0
 
+        # Tobin's Q
+        P[idx["q"], idx["g"]] = R[3, 0] * rho_g
+        P[idx["q"], idx["a"]] = R[3, 1] * rho_a
+        P[idx["q"], idx["i"]] = R[3, 3] * rho_i
+
+        # 資本収益率 rk = y - k (log-linearized marginal product)
+        P[idx["rk"], idx["y"]] = 1.0
+        P[idx["rk"], idx["k"]] = -1.0
+
         # 派生変数の計算
-        # 消費: c = y - g (簡略化された財市場均衡)
+        # 消費: c = y - g - i (財市場均衡)
         c_y_ratio = (
             1
             - gov.g_y_ratio
-            - firm.delta * firm.alpha / (1 / self.params.household.beta - 1 + firm.delta)
+            - firm.delta * firm.alpha / (1 / hh.beta - 1 + firm.delta)
         )
         P[idx["c"], idx["y"]] = c_y_ratio
         P[idx["c"], idx["g"]] = -gov.g_y_ratio
-
-        # 投資: 加速度効果（導出係数を使用）
-        P[idx["i"], idx["y"]] = trans.investment_accelerator
+        P[idx["c"], idx["i"]] = -firm.delta * firm.alpha / (1 / hh.beta - 1 + firm.delta)
 
         # 労働: 生産関数から (N = Y / A * K^(-α))
         P[idx["n"], idx["y"]] = 1.0 / (1 - firm.alpha)
+        P[idx["n"], idx["a"]] = -1.0 / (1 - firm.alpha)
+        P[idx["n"], idx["k"]] = -firm.alpha / (1 - firm.alpha)
 
         # 賃金: 限界生産性条件
         P[idx["w"], idx["y"]] = 1.0
@@ -187,10 +211,6 @@ class DSGEModel:
 
         # 限界費用
         P[idx["mc"], idx["w"]] = 1.0
-
-        # 資本: 緩やかな調整
-        P[idx["k"], idx["k"]] = 1 - firm.delta
-        P[idx["k"], idx["i"]] = firm.delta
 
         # 政府債務: 財政ルール（導出係数を使用）
         P[idx["b"], idx["b"]] = trans.debt_persistence
@@ -200,45 +220,55 @@ class DSGEModel:
         P[idx["tau_c"], idx["tau_c"]] = shocks.rho_tau_c
 
         # ショック応答行列 Q
-        # ショック順序: e_a, e_g, e_m, e_tau, e_risk
+        # ショック順序: e_a, e_g, e_m, e_tau, e_risk, e_i
         Q = np.zeros((n, N_SHOCKS))
 
-        # NKモデルのS行列: (3 x 3) for [y, π, r] x [e_g, e_a, e_m]
+        # NKモデルのS行列: (4 x 4) for [y, π, r, q] x [e_g, e_a, e_m, e_i]
+        # ただし S は非状態ショック(e_m)のみ非ゼロ
         S = nk_sol.S
 
+        # NKモデルの状態へのショック応答 nk_Q: (4 x 4) for [g, a, k, i] x [e_g, e_a, e_m, e_i]
+        nk_Q = nk_sol.Q
+
         # e_a: 技術ショック (index 0)
-        Q[idx["a"], 0] = 1.0
-        Q[idx["y"], 0] = S[0, 1]  # NKモデルのe_a効果
-        Q[idx["pi"], 0] = S[1, 1]
-        Q[idx["R"], 0] = S[2, 1]
-        Q[idx["r"], 0] = S[2, 1] - S[1, 1]  # R - π
-        Q[idx["c"], 0] = S[0, 1] * c_y_ratio
-        Q[idx["i"], 0] = S[0, 1] * imp.technology_investment_share
-        Q[idx["n"], 0] = S[0, 1] / (1 - firm.alpha) - 1.0  # 技術上昇で労働減少
-        Q[idx["w"], 0] = S[0, 1] - Q[idx["n"], 0]
+        # 技術ショックは状態変数 a に影響
+        Q[idx["a"], 0] = nk_Q[1, 1]  # e_a -> a
+        # 制御変数への効果は R @ Q で計算
+        Q[idx["y"], 0] = R[0, 1]  # y への効果
+        Q[idx["pi"], 0] = R[1, 1]
+        Q[idx["R"], 0] = R[2, 1]
+        Q[idx["r"], 0] = R[2, 1] - R[1, 1]  # R - π
+        Q[idx["q"], 0] = R[3, 1]
+        Q[idx["c"], 0] = R[0, 1] * c_y_ratio
+        Q[idx["n"], 0] = R[0, 1] / (1 - firm.alpha) - 1.0  # 技術上昇で労働減少
+        Q[idx["w"], 0] = R[0, 1] - Q[idx["n"], 0]
+        Q[idx["rk"], 0] = R[0, 1]  # y と同じ動き
 
         # e_g: 政府支出ショック (index 1)
-        Q[idx["g"], 1] = 1.0
-        Q[idx["y"], 1] = S[0, 0]  # NKモデルのe_g効果
-        Q[idx["pi"], 1] = S[1, 0]
-        Q[idx["R"], 1] = S[2, 0]
-        Q[idx["r"], 1] = S[2, 0] - S[1, 0]
-        Q[idx["c"], 1] = S[0, 0] * c_y_ratio - gov.g_y_ratio  # クラウディングアウト
-        Q[idx["i"], 1] = S[0, 0] * imp.government_spending_investment_spillover
-        Q[idx["n"], 1] = S[0, 0] / (1 - firm.alpha)
-        Q[idx["w"], 1] = S[0, 0] - Q[idx["n"], 1]
+        Q[idx["g"], 1] = nk_Q[0, 0]  # e_g -> g
+        Q[idx["y"], 1] = R[0, 0]
+        Q[idx["pi"], 1] = R[1, 0]
+        Q[idx["R"], 1] = R[2, 0]
+        Q[idx["r"], 1] = R[2, 0] - R[1, 0]
+        Q[idx["q"], 1] = R[3, 0]
+        Q[idx["c"], 1] = R[0, 0] * c_y_ratio - gov.g_y_ratio  # クラウディングアウト
+        Q[idx["n"], 1] = R[0, 0] / (1 - firm.alpha)
+        Q[idx["w"], 1] = R[0, 0] - Q[idx["n"], 1]
         Q[idx["b"], 1] = gov.g_y_ratio  # 債務増加
+        Q[idx["rk"], 1] = R[0, 0]
 
         # e_m: 金融政策ショック (index 2)
+        # e_m は状態変数に影響しない、制御変数に直接影響
         Q[idx["R"], 2] = S[2, 2]
         Q[idx["y"], 2] = S[0, 2]
         Q[idx["pi"], 2] = S[1, 2]
         Q[idx["r"], 2] = S[2, 2] - S[1, 2]
+        Q[idx["q"], 2] = S[3, 2]
         Q[idx["c"], 2] = S[0, 2] * c_y_ratio
         Q[idx["i"], 2] = S[0, 2] * imp.monetary_investment_elasticity
+        Q[idx["rk"], 2] = S[0, 2]
 
         # e_tau: 消費税ショック (index 3)
-        # 消費税増税は消費を減少させ、産出を減少させる
         Q[idx["tau_c"], 3] = 1.0
         Q[idx["c"], 3] = -imp.consumption_tax_elasticity
         Q[idx["y"], 3] = -imp.consumption_tax_elasticity * imp.output_tax_multiplier_factor
@@ -253,6 +283,19 @@ class DSGEModel:
         Q[idx["i"], 4] = -imp.risk_investment_response
         Q[idx["y"], 4] = -imp.risk_output_response
         Q[idx["c"], 4] = -imp.risk_consumption_response
+        Q[idx["q"], 4] = -imp.risk_investment_response / inv.S_double_prime  # q への影響
+
+        # e_i: 投資固有技術ショック (index 5)
+        Q[idx["i"], 5] = nk_Q[3, 3]  # e_i -> i
+        # 投資ショックは Tobin's Q を通じて投資に影響
+        q_response = 1.0 / inv.S_double_prime
+        Q[idx["q"], 5] = q_response
+        # 投資が増えると資本が蓄積
+        Q[idx["k"], 5] = firm.delta * nk_Q[3, 3]
+        # 産出への波及効果（加速度効果の逆）
+        Q[idx["y"], 5] = nk_Q[3, 3] * trans.investment_accelerator
+        Q[idx["c"], 5] = Q[idx["y"], 5] * c_y_ratio
+        Q[idx["rk"], 5] = Q[idx["y"], 5]
 
         # 固有値（状態遷移行列の対角成分）
         eigenvalues = np.diag(P)

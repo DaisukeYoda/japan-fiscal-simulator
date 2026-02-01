@@ -24,6 +24,10 @@ class EquationCoefficients:
     r_forward: float = 0.0
     g_forward: float = 0.0
     a_forward: float = 0.0
+    k_forward: float = 0.0
+    i_forward: float = 0.0
+    q_forward: float = 0.0
+    rk_forward: float = 0.0
 
     # 当期（t期）の係数 (B行列への寄与)
     y_current: float = 0.0
@@ -31,6 +35,10 @@ class EquationCoefficients:
     r_current: float = 0.0
     g_current: float = 0.0
     a_current: float = 0.0
+    k_current: float = 0.0
+    i_current: float = 0.0
+    q_current: float = 0.0
+    rk_current: float = 0.0
 
     # 前期（t-1期）の係数 (C行列への寄与)
     y_lag: float = 0.0
@@ -38,11 +46,16 @@ class EquationCoefficients:
     r_lag: float = 0.0
     g_lag: float = 0.0
     a_lag: float = 0.0
+    k_lag: float = 0.0
+    i_lag: float = 0.0
+    q_lag: float = 0.0
+    rk_lag: float = 0.0
 
     # ショック係数 (D行列への寄与)
     e_g: float = 0.0
     e_a: float = 0.0
     e_m: float = 0.0
+    e_i: float = 0.0
 
 
 class Equation(Protocol):

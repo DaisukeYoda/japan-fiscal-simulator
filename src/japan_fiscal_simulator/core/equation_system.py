@@ -19,23 +19,27 @@ class VariableIndices:
     # 状態変数（先決変数）
     g: int = 0  # 政府支出
     a: int = 1  # 技術
+    k: int = 2  # 資本
+    i: int = 3  # 投資
 
     # 制御変数（ジャンプ変数）
-    y: int = 2  # 産出
-    pi: int = 3  # インフレ
-    r: int = 4  # 金利
+    y: int = 4  # 産出
+    pi: int = 5  # インフレ
+    r: int = 6  # 金利
+    q: int = 7  # Tobin's Q
+    rk: int = 8  # 資本収益率
 
     @property
     def n_state(self) -> int:
-        return 2
+        return 4
 
     @property
     def n_control(self) -> int:
-        return 3
+        return 5
 
     @property
     def n_total(self) -> int:
-        return 5
+        return 9
 
 
 @dataclass(frozen=True)
@@ -45,10 +49,11 @@ class ShockIndices:
     e_g: int = 0  # 政府支出ショック
     e_a: int = 1  # 技術ショック
     e_m: int = 2  # 金融政策ショック
+    e_i: int = 3  # 投資固有技術ショック
 
     @property
     def n_shocks(self) -> int:
-        return 3
+        return 4
 
 
 @dataclass
@@ -112,6 +117,10 @@ class EquationSystem:
         A[row, idx.r] = eq.r_forward
         A[row, idx.g] = eq.g_forward
         A[row, idx.a] = eq.a_forward
+        A[row, idx.k] = eq.k_forward
+        A[row, idx.i] = eq.i_forward
+        A[row, idx.q] = eq.q_forward
+        A[row, idx.rk] = eq.rk_forward
 
         # 当期（t期）→ B行列
         B[row, idx.y] = eq.y_current
@@ -119,6 +128,10 @@ class EquationSystem:
         B[row, idx.r] = eq.r_current
         B[row, idx.g] = eq.g_current
         B[row, idx.a] = eq.a_current
+        B[row, idx.k] = eq.k_current
+        B[row, idx.i] = eq.i_current
+        B[row, idx.q] = eq.q_current
+        B[row, idx.rk] = eq.rk_current
 
         # 前期（t-1期）→ C行列
         C[row, idx.y] = eq.y_lag
@@ -126,8 +139,13 @@ class EquationSystem:
         C[row, idx.r] = eq.r_lag
         C[row, idx.g] = eq.g_lag
         C[row, idx.a] = eq.a_lag
+        C[row, idx.k] = eq.k_lag
+        C[row, idx.i] = eq.i_lag
+        C[row, idx.q] = eq.q_lag
+        C[row, idx.rk] = eq.rk_lag
 
         # ショック → D行列
         D[row, sidx.e_g] = eq.e_g
         D[row, sidx.e_a] = eq.e_a
         D[row, sidx.e_m] = eq.e_m
+        D[row, sidx.e_i] = eq.e_i

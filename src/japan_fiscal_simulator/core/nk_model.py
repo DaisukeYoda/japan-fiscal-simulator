@@ -266,6 +266,9 @@ class NewKeynesianModel:
         q_r_coefficient = -1.0 / (1 - beta * (1 - delta))
 
         # 投資調整: i_t = i_{t-1} + (1/S'')·q_t + e_i,t
+        # 注意: 正式な方程式では i は単位根（係数1）だが、
+        # 縮約形では rho_i を使って安定な動学を近似する。
+        # Phase 4 の Blanchard-Kahn 解法で正式に解く予定。
         i_q_coefficient = 1.0 / S_double_prime
 
         # === 解行列の構築 ===
@@ -279,11 +282,13 @@ class NewKeynesianModel:
 
         # P: 状態遷移行列 (n_state x n_state)
         P = np.zeros((n_state, n_state))
-        P[0, 0] = rho_g  # g の持続性
-        P[1, 1] = rho_a  # a の持続性
+        P[0, 0] = rho_g  # g の AR(1) 係数
+        P[1, 1] = rho_a  # a の AR(1) 係数
         P[2, 2] = 1 - delta  # k の減耗
         P[2, 3] = delta  # i -> k
-        P[3, 3] = rho_i  # i の持続性（調整コストによる粘着性）
+        # 投資の持続性: 正式には 1.0（単位根）だが、
+        # 縮約形では rho_i で近似して安定な IRF を得る
+        P[3, 3] = rho_i
 
         # Q: 状態へのショック応答 (n_state x n_shock)
         Q = np.zeros((n_state, n_shock))
@@ -306,8 +311,6 @@ class NewKeynesianModel:
         # q は r を通じて g, a に依存
         R[3, 0] = q_r_coefficient * psi_rg
         R[3, 1] = q_r_coefficient * psi_ra
-        # q は i を通じて資本ストック変化にも依存（投資の価値）
-        R[3, 3] = i_q_coefficient * rho_i
         # rk = y - k_{t-1} なので:
         # rk は y と同じ g, a への応答 + k への負の依存
         R[4, 0] = psi_yg  # rk の g への応答 = y の g への応答

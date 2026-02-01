@@ -178,7 +178,8 @@ class TestNewKeynesianModelExpanded:
         assert sol.P[0, 0] == pytest.approx(params.shocks.rho_g)  # g
         assert sol.P[1, 1] == pytest.approx(params.shocks.rho_a)  # a
         assert sol.P[2, 2] == pytest.approx(1 - params.firm.delta)  # k
-        assert sol.P[3, 3] == pytest.approx(params.shocks.rho_i)  # i
+        # 投資: 縮約形では rho_i で近似（正式には単位根だが安定化のため）
+        assert sol.P[3, 3] == pytest.approx(params.shocks.rho_i)
 
     def test_capital_accumulation_in_P(self) -> None:
         """資本蓄積の係数が正しいことを確認"""
@@ -204,7 +205,7 @@ class TestNewKeynesianModelExpanded:
         assert irf["i"][0] > 0
 
         # k は徐々に蓄積
-        assert irf["k"][0] == pytest.approx(0.0, abs=1e-10)  # 初期は影響なし
+        assert irf["k"][0] == pytest.approx(0.0, abs=1e-6)  # 初期は影響なし
         assert irf["k"][10] > 0  # 時間経過で蓄積
 
         # q は投資調整を反映

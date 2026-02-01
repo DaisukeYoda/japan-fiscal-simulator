@@ -27,45 +27,58 @@ class TestNKModelGoldenMaster:
         sol = nk_model.solution
         P = sol.P
 
-        assert P.shape == (2, 2)
-        # P は diag([rho_g, rho_a]) = diag([0.9, 0.9])
-        np.testing.assert_allclose(P[0, 0], 0.9, rtol=1e-10)
-        np.testing.assert_allclose(P[1, 1], 0.9, rtol=1e-10)
-        np.testing.assert_allclose(P[0, 1], 0.0, rtol=1e-10)
-        np.testing.assert_allclose(P[1, 0], 0.0, rtol=1e-10)
+        # 9方程式モデル: 状態変数 [g, a, k, i]
+        assert P.shape == (4, 4)
+        # P の対角成分は持続性パラメータ
+        np.testing.assert_allclose(P[0, 0], 0.9, rtol=1e-10)  # rho_g
+        np.testing.assert_allclose(P[1, 1], 0.9, rtol=1e-10)  # rho_a
+        np.testing.assert_allclose(P[2, 2], 1 - 0.025, rtol=1e-10)  # 1 - delta
+        np.testing.assert_allclose(P[3, 3], 0.70, rtol=1e-10)  # rho_i
+        # 資本蓄積: k <- i
+        np.testing.assert_allclose(P[2, 3], 0.025, rtol=1e-10)  # delta
 
     def test_solution_Q_matrix(self, nk_model: NewKeynesianModel) -> None:
         """ショック応答行列Qの値を検証"""
         sol = nk_model.solution
         Q = sol.Q
 
-        assert Q.shape == (2, 3)
-        # Q[0, 0] = 1 (e_g -> g), Q[1, 1] = 1 (e_a -> a)
+        # 9方程式モデル: ショック [e_g, e_a, e_m, e_i]
+        assert Q.shape == (4, 4)
+        # Q[0, 0] = 1 (e_g -> g), Q[1, 1] = 1 (e_a -> a), Q[3, 3] = 1 (e_i -> i)
         np.testing.assert_allclose(Q[0, 0], 1.0, rtol=1e-10)
         np.testing.assert_allclose(Q[1, 1], 1.0, rtol=1e-10)
-        np.testing.assert_allclose(Q[0, 1], 0.0, rtol=1e-10)
-        np.testing.assert_allclose(Q[1, 0], 0.0, rtol=1e-10)
+        np.testing.assert_allclose(Q[3, 3], 1.0, rtol=1e-10)
+        # e_m は状態に影響しない
+        np.testing.assert_allclose(Q[0, 2], 0.0, rtol=1e-10)
+        np.testing.assert_allclose(Q[1, 2], 0.0, rtol=1e-10)
 
     def test_solution_R_matrix(self, nk_model: NewKeynesianModel) -> None:
         """制御変数の状態依存行列Rの値を検証"""
         sol = nk_model.solution
         R = sol.R
 
-        assert R.shape == (3, 2)
+        # 9方程式モデル: 制御変数 [y, π, r, q, rk] x 状態 [g, a, k, i]
+        assert R.shape == (5, 4)
         # R[0, 0] = psi_yg (y の g への応答)
         # 値は正であるべき（政府支出は産出を増加させる）
         assert R[0, 0] > 0  # psi_yg
         # R[1, 0] = psi_pig (π の g への応答) は正
         assert R[1, 0] > 0  # psi_pig
+        # R[4, 2] = -1 (rk の k への応答、限界生産物逓減)
+        np.testing.assert_allclose(R[4, 2], -1.0, rtol=1e-10)
 
     def test_solution_S_matrix(self, nk_model: NewKeynesianModel) -> None:
         """ショック直接効果行列Sの値を検証"""
         sol = nk_model.solution
         S = sol.S
 
-        assert S.shape == (3, 3)
+        # 9方程式モデル: 制御変数 [y, π, r, q, rk] x ショック [e_g, e_a, e_m, e_i]
+        assert S.shape == (5, 4)
         # 金融引き締め(e_m > 0)は産出を減少させる
         assert S[0, 2] < 0  # psi_ym < 0
+        # 状態に影響するショック(e_g, e_a, e_i)はSではなくQで効果を持つ
+        np.testing.assert_allclose(S[0, 0], 0.0, rtol=1e-10)  # e_g -> y はQで
+        np.testing.assert_allclose(S[0, 1], 0.0, rtol=1e-10)  # e_a -> y はQで
 
     def test_kappa_value(self, nk_model: NewKeynesianModel) -> None:
         """Phillips曲線スロープkappaの値を検証"""

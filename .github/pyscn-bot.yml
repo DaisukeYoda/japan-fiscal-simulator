@@ -1,0 +1,9 @@
+# レポート言語 (デフォルト: en)
+language: ja
+
+# 対象ディレクトリ (デフォルト: 全体)
+target_directories:
+  - src/
+
+# 監査間隔 (デフォルト: weekly)
+audit_interval: monthly

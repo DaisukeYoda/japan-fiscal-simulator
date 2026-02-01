@@ -1,6 +1,6 @@
 """New Keynesian DSGEモデル
 
-標準的な3方程式NKモデル + 財政拡張
+9方程式NKモデル（コア3方程式 + 財政・資本ブロック）
 
 縮約形解法を使用（行列が特異な場合でも解ける）
 """
@@ -14,6 +14,7 @@ from japan_fiscal_simulator.core.equation_system import EquationSystem, SystemMa
 from japan_fiscal_simulator.core.equations import (
     CapitalAccumulation,
     CapitalAccumulationParameters,
+    CapitalRentalRateEquation,
     GovernmentSpendingProcess,
     InvestmentAdjustmentEquation,
     InvestmentAdjustmentParameters,
@@ -62,7 +63,7 @@ class ModelVariables:
     state_vars: tuple[str, ...] = ("g", "a", "k", "i")  # 政府支出、技術、資本、投資
 
     # 制御変数（ジャンプ変数）- t期に決定
-    control_vars: tuple[str, ...] = ("y", "pi", "r", "q")  # 産出、インフレ、金利、Tobin's Q
+    control_vars: tuple[str, ...] = ("y", "pi", "r", "q", "rk")  # 産出、インフレ、金利、Tobin's Q、資本収益率
 
     # ショック
     shocks: tuple[str, ...] = ("e_g", "e_a", "e_m", "e_i")  # 政府支出、技術、金融政策、投資
@@ -148,8 +149,14 @@ class NewKeynesianModel:
         PhillipsCurve,
         TaylorRule,
         TobinsQEquation,
+        CapitalRentalRateEquation,
     ]:
-        """方程式オブジェクトを作成"""
+        """方程式オブジェクトを作成
+
+        9方程式を返す:
+        - 状態変数: g, a, k, i (4)
+        - 制御変数: y, π, r, q, rk (5)
+        """
         hh = self.params.household
         firm = self.params.firm
         gov = self.params.government
@@ -167,6 +174,7 @@ class NewKeynesianModel:
         phillips = PhillipsCurve(PhillipsCurveParameters(beta=hh.beta, theta=firm.theta))
         taylor = TaylorRule(TaylorRuleParameters(phi_pi=cb.phi_pi, phi_y=cb.phi_y))
         tobins_q = TobinsQEquation(TobinsQParameters(beta=hh.beta, delta=firm.delta))
+        capital_rental = CapitalRentalRateEquation()
 
         return (
             g_process,
@@ -177,21 +185,23 @@ class NewKeynesianModel:
             phillips,
             taylor,
             tobins_q,
+            capital_rental,
         )
 
     def _solve_reduced_form(self) -> NKSolutionResult:
         """縮約形で解く
 
-        8方程式NKモデルの解の形:
-            状態変数: g, a, k, i
-            制御変数: y, π, r, q
+        9方程式NKモデルの解の形:
+            状態変数: g, a, k, i (4)
+            制御変数: y, π, r, q, rk (5)
 
         コアブロック (y, π, r) は g, a に依存:
             y_t = ψ_yg * g_t + ψ_ya * a_t
             π_t = ψ_πg * g_t + ψ_πa * a_t
             r_t = ψ_rg * g_t + ψ_ra * a_t
 
-        資本ブロック (k, i, q) はコアブロックと投資ショックに依存
+        資本ブロック (k, i, q, rk) はコアブロックと投資ショックに依存:
+            rk_t = y_t - k_{t-1}  (限界生産物条件)
         """
         hh = self.params.household
         firm = self.params.firm
@@ -249,27 +259,22 @@ class NewKeynesianModel:
 
         # === 資本ブロックの解法 ===
         # Tobin's Q: q_t = β(1-δ)E[q_{t+1}] + β·E[rk_{t+1}] - r_t
-        # 定常状態からの乖離で、rk ≈ r + δ（近似）とすると:
-        # q は r の変動に反応する
+        # rk_t = y_t - k_{t-1} より、rk は y と k から決まる
+        # q は r と rk（の期待値）に依存
 
         # Tobin's Q の係数（r への応答）
-        # q_t = -r_t / (1 - β(1-δ)) ≈ -r_t （β(1-δ) ≈ 0.97なので分母≈0.03）
         q_r_coefficient = -1.0 / (1 - beta * (1 - delta))
 
         # 投資調整: i_t = i_{t-1} + (1/S'')·q_t + e_i,t
-        # i は q に 1/S'' で反応
         i_q_coefficient = 1.0 / S_double_prime
-
-        # 資本蓄積: k_t = (1-δ)k_{t-1} + δ·i_t
-        # k は i の累積
 
         # === 解行列の構築 ===
         # 状態変数: [g, a, k, i] (4)
-        # 制御変数: [y, π, r, q] (4)
+        # 制御変数: [y, π, r, q, rk] (5)
         # ショック: [e_g, e_a, e_m, e_i] (4)
 
         n_state = 4
-        n_control = 4
+        n_control = 5
         n_shock = 4
 
         # P: 状態遷移行列 (n_state x n_state)
@@ -287,7 +292,7 @@ class NewKeynesianModel:
         Q[3, 3] = 1.0  # e_i -> i
 
         # R: 制御変数の状態依存 (n_control x n_state)
-        # [y, π, r, q] = R @ [g, a, k, i]
+        # [y, π, r, q, rk] = R @ [g, a, k, i]
         R = np.zeros((n_control, n_state))
         # y は g, a に依存
         R[0, 0] = psi_yg
@@ -302,7 +307,12 @@ class NewKeynesianModel:
         R[3, 0] = q_r_coefficient * psi_rg
         R[3, 1] = q_r_coefficient * psi_ra
         # q は i を通じて資本ストック変化にも依存（投資の価値）
-        R[3, 3] = i_q_coefficient * rho_i  # i の持続効果による q への影響
+        R[3, 3] = i_q_coefficient * rho_i
+        # rk = y - k_{t-1} なので:
+        # rk は y と同じ g, a への応答 + k への負の依存
+        R[4, 0] = psi_yg  # rk の g への応答 = y の g への応答
+        R[4, 1] = psi_ya  # rk の a への応答 = y の a への応答
+        R[4, 2] = -1.0  # rk の k への応答 = -1（限界生産物逓減）
 
         # S: 制御変数へのショック直接効果 (n_control x n_shock)
         # 状態変数に影響するショック(e_g, e_a, e_i)は R @ Q で効果が計算される
@@ -313,6 +323,7 @@ class NewKeynesianModel:
         S[1, 2] = psi_pim  # e_m -> π
         S[2, 2] = psi_rm  # e_m -> r
         S[3, 2] = q_r_coefficient * psi_rm  # e_m -> q (via r)
+        S[4, 2] = psi_ym  # e_m -> rk (y と同じ応答)
 
         return NKSolutionResult(
             P=P,
@@ -329,7 +340,7 @@ class NewKeynesianModel:
 
         モデル形式: A @ E[y_{t+1}] + B @ y_t + C @ y_{t-1} + D @ ε_t = 0
 
-        y_t = [g, a, k, i, y, π, r, q]  (状態 + 制御)
+        y_t = [g, a, k, i, y, π, r, q, rk]  (状態 + 制御)
         """
         (
             g_process,
@@ -340,6 +351,7 @@ class NewKeynesianModel:
             phillips,
             taylor,
             tobins_q,
+            capital_rental,
         ) = self._create_equations()
 
         equation_system = EquationSystem()
@@ -352,6 +364,7 @@ class NewKeynesianModel:
             phillips.coefficients(),
             taylor.coefficients(),
             tobins_q.coefficients(),
+            capital_rental.coefficients(),
         ]
 
         return equation_system.build_matrices(equations)

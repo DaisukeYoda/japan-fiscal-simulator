@@ -13,6 +13,7 @@ from japan_fiscal_simulator.core.equations.fiscal_rule import (
     TechnologyProcess,
 )
 from japan_fiscal_simulator.core.equations.investment import (
+    CapitalRentalRateEquation,
     InvestmentAdjustmentEquation,
     InvestmentAdjustmentParameters,
     TobinsQEquation,
@@ -33,6 +34,7 @@ from japan_fiscal_simulator.core.equations.taylor_rule import (
 __all__ = [
     "CapitalAccumulation",
     "CapitalAccumulationParameters",
+    "CapitalRentalRateEquation",
     "Equation",
     "EquationCoefficients",
     "GovernmentSpendingProcess",

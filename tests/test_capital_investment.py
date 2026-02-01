@@ -5,6 +5,7 @@ import pytest
 from japan_fiscal_simulator.core.equations import (
     CapitalAccumulation,
     CapitalAccumulationParameters,
+    CapitalRentalRateEquation,
     InvestmentAdjustmentEquation,
     InvestmentAdjustmentParameters,
     TobinsQEquation,
@@ -104,8 +105,29 @@ class TestInvestmentAdjustment:
         assert "i_t" in eq.description
 
 
+class TestCapitalRentalRate:
+    """資本収益率方程式のテスト"""
+
+    def test_coefficients_basic(self) -> None:
+        """基本的な係数のテスト"""
+        eq = CapitalRentalRateEquation()
+        coef = eq.coefficients()
+
+        # rk_t - y_t + k_{t-1} = 0
+        assert coef.rk_current == 1.0
+        assert coef.y_current == -1.0
+        assert coef.k_lag == 1.0
+
+    def test_name_and_description(self) -> None:
+        """名前と説明のテスト"""
+        eq = CapitalRentalRateEquation()
+
+        assert "Capital" in eq.name or "Rental" in eq.name
+        assert "rk_t" in eq.description
+
+
 class TestNewKeynesianModelExpanded:
-    """拡張NKモデル（8方程式）のテスト"""
+    """拡張NKモデル（9方程式）のテスト"""
 
     def test_model_variables(self) -> None:
         """モデル変数が正しく設定されていることを確認"""
@@ -119,12 +141,13 @@ class TestNewKeynesianModelExpanded:
         assert "k" in model.vars.state_vars
         assert "i" in model.vars.state_vars
 
-        # 制御変数: y, pi, r, q
-        assert model.vars.n_control == 4
+        # 制御変数: y, pi, r, q, rk
+        assert model.vars.n_control == 5
         assert "y" in model.vars.control_vars
         assert "pi" in model.vars.control_vars
         assert "r" in model.vars.control_vars
         assert "q" in model.vars.control_vars
+        assert "rk" in model.vars.control_vars
 
         # ショック: e_g, e_a, e_m, e_i
         assert model.vars.n_shock == 4
@@ -140,10 +163,10 @@ class TestNewKeynesianModelExpanded:
         assert sol.P.shape == (4, 4)
         # Q: (4 x 4) ショック応答
         assert sol.Q.shape == (4, 4)
-        # R: (4 x 4) 制御の状態依存
-        assert sol.R.shape == (4, 4)
-        # S: (4 x 4) 制御へのショック直接効果
-        assert sol.S.shape == (4, 4)
+        # R: (5 x 4) 制御の状態依存
+        assert sol.R.shape == (5, 4)
+        # S: (5 x 4) 制御へのショック直接効果
+        assert sol.S.shape == (5, 4)
 
     def test_state_persistence(self) -> None:
         """状態変数の持続性が正しいことを確認"""
@@ -186,6 +209,23 @@ class TestNewKeynesianModelExpanded:
 
         # q は投資調整を反映
         assert "q" in irf
+
+        # rk（資本収益率）も計算される
+        assert "rk" in irf
+
+    def test_capital_rental_rate_dynamics(self) -> None:
+        """資本収益率のダイナミクスを確認"""
+        params = DefaultParameters()
+        model = NewKeynesianModel(params)
+
+        # 政府支出ショックへの応答
+        irf = model.impulse_response("e_g", size=0.01, periods=20)
+
+        # rk は y と k の関数なので存在する
+        assert "rk" in irf
+
+        # 政府支出増加は産出を増加させるので、rk も増加するはず
+        assert irf["rk"][0] > 0
 
 
 class TestDSGEModelExpanded:

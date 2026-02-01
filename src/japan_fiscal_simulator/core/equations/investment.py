@@ -1,12 +1,15 @@
 """投資方程式
 
-Tobin's Q方程式と投資調整コスト方程式を定義する。
+Tobin's Q方程式、投資調整コスト方程式、資本収益率方程式を定義する。
 
 Tobin's Q:
 q_t = β × E[(1-δ)q_{t+1} + rk_{t+1}] - r_t
 
 投資調整コスト:
 i_t = i_{t-1} + (1/S'') × q_t + e_i,t
+
+資本収益率（限界生産物条件）:
+rk_t = y_t - k_{t-1}  (log-linearized)
 """
 
 from dataclasses import dataclass
@@ -93,4 +96,32 @@ class InvestmentAdjustmentEquation:
             i_lag=-1.0,
             q_current=-1.0 / S_double_prime,
             e_i=-1.0,
+        )
+
+
+class CapitalRentalRateEquation:
+    """資本収益率方程式
+
+    rk_t = y_t - k_{t-1}
+
+    対数線形化された限界生産物条件。資本収益率は
+    産出と資本ストックの差で決定される。
+
+    標準化形式: rk_t - y_t + k_{t-1} = 0
+    """
+
+    @property
+    def name(self) -> str:
+        return "Capital Rental Rate"
+
+    @property
+    def description(self) -> str:
+        return "rk_t = y_t - k_{t-1}"
+
+    def coefficients(self) -> EquationCoefficients:
+        """資本収益率方程式の係数を返す"""
+        return EquationCoefficients(
+            rk_current=1.0,
+            y_current=-1.0,
+            k_lag=1.0,
         )

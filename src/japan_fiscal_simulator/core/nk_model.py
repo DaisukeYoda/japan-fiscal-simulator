@@ -364,8 +364,11 @@ class NewKeynesianModel:
         S[5, 2] = psi_nm  # e_m -> n (via y)
         # e_w: 賃金マークアップショック -> インフレに波及
         # 賃金上昇 -> 限界費用上昇 -> インフレ上昇 -> 金利上昇 -> 産出減少
-        # 簡略化: 直接的な産出・インフレへの効果を設定
-        wage_inflation_pass_through = lambda_w * 0.5  # 賃金からインフレへのパススルー
+        # 賃金インデクセーション(iota_w)を使用してパススルー係数を計算
+        # iota_w=0: 完全後向き（前期インフレに連動）、iota_w=1: 完全前向き
+        # 参考: Smets-Wouters (2007), Erceg-Henderson-Levin (2000)
+        iota_w = labor.iota_w
+        wage_inflation_pass_through = lambda_w * iota_w
         S[1, 4] = wage_inflation_pass_through  # e_w -> π
         S[0, 4] = -wage_inflation_pass_through / kappa if kappa > 0 else 0.0  # e_w -> y (via inflation)
         S[5, 4] = n_y_coef * S[0, 4]  # e_w -> n (via y)

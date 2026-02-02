@@ -138,11 +138,34 @@ class TestHabitFormationIntegration:
         model_habit = NewKeynesianModel(params_habit)
         model_no_habit = NewKeynesianModel(params_no_habit)
 
-        # 解が異なることを確認（習慣形成の効果）
         sol_habit = model_habit.solution
         sol_no_habit = model_no_habit.solution
 
-        # P行列（状態遷移）が異なる可能性がある
-        # ただし現在の縮約形解法では直接的な影響は限定的
-        # 将来のBK解法で完全に反映される
-        assert sol_habit.kappa == sol_no_habit.kappa  # Phillips曲線スロープは同じ
+        # Phillips曲線スロープは習慣形成に依存しない
+        assert sol_habit.kappa == sol_no_habit.kappa
+
+        # IS曲線の係数を直接比較して習慣形成の効果を確認
+        is_habit = ISCurve(
+            ISCurveParameters(
+                sigma=params_habit.household.sigma,
+                g_y=params_habit.government.g_y_ratio,
+                habit=params_habit.household.habit,
+            )
+        )
+        is_no_habit = ISCurve(
+            ISCurveParameters(
+                sigma=params_no_habit.household.sigma,
+                g_y=params_no_habit.government.g_y_ratio,
+                habit=0.0,
+            )
+        )
+
+        coef_habit = is_habit.coefficients()
+        coef_no_habit = is_no_habit.coefficients()
+
+        # 習慣形成ありではy_lagが非ゼロ
+        assert coef_habit.y_lag != 0.0
+        assert coef_no_habit.y_lag == 0.0
+
+        # 習慣形成ありでは金利感応度が異なる
+        assert coef_habit.r_current != coef_no_habit.r_current

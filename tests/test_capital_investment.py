@@ -138,34 +138,31 @@ class TestCapitalRentalRate:
 
 
 class TestNewKeynesianModelExpanded:
-    """拡張NKモデル（11方程式）のテスト"""
+    """拡張NKモデル（9方程式）のテスト"""
 
     def test_model_variables(self) -> None:
         """モデル変数が正しく設定されていることを確認"""
         params = DefaultParameters()
         model = NewKeynesianModel(params)
 
-        # 状態変数: g, a, k, i, w (Phase 2で拡張)
-        assert model.vars.n_state == 5
+        # 状態変数: g, a, k, i
+        assert model.vars.n_state == 4
         assert "g" in model.vars.state_vars
         assert "a" in model.vars.state_vars
         assert "k" in model.vars.state_vars
         assert "i" in model.vars.state_vars
-        assert "w" in model.vars.state_vars  # Phase 2
 
-        # 制御変数: y, pi, r, q, rk, n (Phase 2で拡張)
-        assert model.vars.n_control == 6
+        # 制御変数: y, pi, r, q, rk
+        assert model.vars.n_control == 5
         assert "y" in model.vars.control_vars
         assert "pi" in model.vars.control_vars
         assert "r" in model.vars.control_vars
         assert "q" in model.vars.control_vars
         assert "rk" in model.vars.control_vars
-        assert "n" in model.vars.control_vars  # Phase 2
 
-        # ショック: e_g, e_a, e_m, e_i, e_w (Phase 2で拡張)
-        assert model.vars.n_shock == 5
+        # ショック: e_g, e_a, e_m, e_i
+        assert model.vars.n_shock == 4
         assert "e_i" in model.vars.shocks
-        assert "e_w" in model.vars.shocks  # Phase 2
 
     def test_solution_matrices_shape(self) -> None:
         """解行列の形状が正しいことを確認"""
@@ -173,14 +170,14 @@ class TestNewKeynesianModelExpanded:
         model = NewKeynesianModel(params)
         sol = model.solution
 
-        # P: (5 x 5) 状態遷移 (Phase 2で拡張)
-        assert sol.P.shape == (5, 5)
-        # Q: (5 x 5) ショック応答 (Phase 2で拡張)
-        assert sol.Q.shape == (5, 5)
-        # R: (6 x 5) 制御の状態依存 (Phase 2で拡張)
-        assert sol.R.shape == (6, 5)
-        # S: (6 x 5) 制御へのショック直接効果 (Phase 2で拡張)
-        assert sol.S.shape == (6, 5)
+        # P: (4 x 4) 状態遷移
+        assert sol.P.shape == (4, 4)
+        # Q: (4 x 4) ショック応答
+        assert sol.Q.shape == (4, 4)
+        # R: (5 x 4) 制御の状態依存
+        assert sol.R.shape == (5, 4)
+        # S: (5 x 4) 制御へのショック直接効果
+        assert sol.S.shape == (5, 4)
 
     def test_state_persistence(self) -> None:
         """状態変数の持続性が正しいことを確認"""

@@ -195,7 +195,12 @@ class NewKeynesianModel:
             # --- Control block (9) ---
             ISCurve(ISCurveParameters(sigma=hh.sigma, g_y=gov.g_y_ratio, habit=hh.habit)),
             PhillipsCurve(
-                PhillipsCurveParameters(beta=hh.beta, theta=firm.theta, iota_p=firm.iota_p)
+                PhillipsCurveParameters(
+                    beta=hh.beta,
+                    theta=firm.theta,
+                    iota_p=firm.iota_p,
+                    rho_p=shocks.rho_p,
+                )
             ),
             TaylorRule(TaylorRuleParameters(phi_pi=cb.phi_pi, phi_y=cb.phi_y)),
             TobinsQEquation(TobinsQParameters(beta=hh.beta, delta=firm.delta)),

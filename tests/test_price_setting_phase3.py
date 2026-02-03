@@ -96,3 +96,15 @@ class TestPhase3Parameters:
         shock_idx = model.vars.shock_index("e_p")
         expected_s1 = sol.P @ s0 + sol.Q[:, shock_idx] * (size * (params.shocks.rho_p**1))
         np.testing.assert_allclose(s1, expected_s1, atol=1e-10, rtol=1e-8)
+
+    def test_price_markup_rho_p_affects_initial_inflation(self) -> None:
+        low_rho = DefaultParameters(shocks=ShockParameters(rho_p=0.0))
+        high_rho = DefaultParameters(shocks=ShockParameters(rho_p=0.9))
+
+        low_model = NewKeynesianModel(low_rho)
+        high_model = NewKeynesianModel(high_rho)
+
+        low_pi0 = low_model.impulse_response("e_p", size=0.01, periods=0)["pi"][0]
+        high_pi0 = high_model.impulse_response("e_p", size=0.01, periods=0)["pi"][0]
+
+        assert high_pi0 != pytest.approx(low_pi0)

@@ -32,6 +32,7 @@ class BlanchardKahnResult:
     n_unstable: int
     n_predetermined: int
     n_control: int
+    n_forward_looking: int
     bk_satisfied: bool
     eigenvalues: np.ndarray
     message: str
@@ -112,7 +113,8 @@ class BlanchardKahnSolver:
             n_stable=n_stable,
             n_unstable=n_unstable,
             n_predetermined=self.n_state,
-            n_control=self.n_forward_looking,
+            n_control=self.n_control,
+            n_forward_looking=self.n_forward_looking,
             bk_satisfied=True,
             eigenvalues=eigenvalues,
             message="QZ分解と係数一致条件により解を取得しました",
@@ -159,7 +161,7 @@ class BlanchardKahnSolver:
         ns = self.n_state
         nc = self.n_control
         n = self.n_total
-        max_policy_residual = 1e-2
+        max_policy_residual = 1e-3
 
         identity_state = np.eye(ns)
 
@@ -182,23 +184,43 @@ class BlanchardKahnSolver:
         err = float(np.linalg.norm(residual(x_candidate), ord=np.inf))
         used_fallback = False
 
-        if (not solution.success) or err > 1e-6:
-            lsq = least_squares(
-                residual,
-                x0=x0,
-                method="trf",
-                ftol=tol,
-                xtol=tol,
-                gtol=tol,
-                max_nfev=20000,
-            )
-            x_candidate = np.asarray(lsq.x, dtype=float)
-            err = float(np.linalg.norm(residual(x_candidate), ord=np.inf))
+        if (not solution.success) or err > max_policy_residual:
+            # local minima 回避のため、dogbox + 決定的な微小摂動初期値で再探索
+            candidates: list[tuple[np.ndarray, float, bool]] = [(x_candidate, err, bool(solution.success))]
+            for guess in (
+                x0,
+                x0 + np.random.default_rng(0).normal(scale=0.2, size=x0.shape),
+            ):
+                lsq = least_squares(
+                    residual,
+                    x0=guess,
+                    method="dogbox",
+                    ftol=tol,
+                    xtol=tol,
+                    gtol=tol,
+                    max_nfev=6000,
+                )
+                x_lsq = np.asarray(lsq.x, dtype=float)
+                err_lsq = float(np.linalg.norm(residual(x_lsq), ord=np.inf))
+                candidates.append((x_lsq, err_lsq, bool(lsq.success)))
+
+            # 安定な候補を優先し、なければ残差最小を採用
+            stable_candidates: list[tuple[np.ndarray, float, bool]] = []
+            for cand_x, cand_err, cand_success in candidates:
+                cand_P, _ = unpack(cand_x)
+                cand_sr = float(np.max(np.abs(np.linalg.eigvals(cand_P)))) if cand_P.size > 0 else 0.0
+                if cand_sr < 1.0 + 1e-6:
+                    stable_candidates.append((cand_x, cand_err, cand_success))
+
+            selected_pool = stable_candidates if stable_candidates else candidates
+            best_x, best_err, best_success = min(selected_pool, key=lambda v: v[1])
+            x_candidate = np.asarray(best_x, dtype=float)
+            err = float(best_err)
             used_fallback = True
-            if (not lsq.success) and err > 1e-6:
+            if (not best_success) and err > max_policy_residual:
                 raise BlanchardKahnError(
                     "政策関数の非線形方程式が収束しません: "
-                    f"{solution.message} / fallback={lsq.message}"
+                    f"{solution.message} / fallback best residual={err:.2e}"
                 )
 
         P, R = unpack(x_candidate)

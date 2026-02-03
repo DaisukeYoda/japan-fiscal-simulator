@@ -73,8 +73,8 @@ class ModelVariables:
     control_vars: tuple[str, ...] = ("y", "pi", "r", "q", "rk", "n")
 
     # ショック
-    # Phase 2: e_w（賃金マークアップショック）を追加
-    shocks: tuple[str, ...] = ("e_g", "e_a", "e_m", "e_i", "e_w")
+    # Phase 3: e_p（価格マークアップショック）を追加
+    shocks: tuple[str, ...] = ("e_g", "e_a", "e_m", "e_i", "e_w", "e_p")
 
     @property
     def n_state(self) -> int:
@@ -113,7 +113,7 @@ class NewKeynesianModel:
        y_t = E[y_{t+1}] - σ^{-1}(r_t - E[π_{t+1}]) + g_y * g_t
 
     2. Phillips曲線（NKPC）:
-       π_t = β * E[π_{t+1}] + κ * y_t
+       π_t = (ι_p/(1+βι_p)) * π_{t-1} + (β/(1+βι_p)) * E[π_{t+1}] + κ * mc_t + e_p,t
 
     3. Taylor則:
        r_t = φ_π * π_t + φ_y * y_t + e_m,t
@@ -184,7 +184,9 @@ class NewKeynesianModel:
         is_curve = ISCurve(
             ISCurveParameters(sigma=hh.sigma, g_y=gov.g_y_ratio, habit=hh.habit)
         )
-        phillips = PhillipsCurve(PhillipsCurveParameters(beta=hh.beta, theta=firm.theta))
+        phillips = PhillipsCurve(
+            PhillipsCurveParameters(beta=hh.beta, theta=firm.theta, iota_p=firm.iota_p)
+        )
         taylor = TaylorRule(TaylorRuleParameters(phi_pi=cb.phi_pi, phi_y=cb.phi_y))
         tobins_q = TobinsQEquation(TobinsQParameters(beta=hh.beta, delta=firm.delta))
         capital_rental = CapitalRentalRateEquation()
@@ -250,7 +252,7 @@ class NewKeynesianModel:
         theta_w = labor.theta_w
 
         # Phillips曲線スロープ（方程式モジュールを使用）
-        kappa = compute_phillips_slope(beta, firm.theta)
+        kappa = compute_phillips_slope(beta, firm.theta, firm.iota_p)
 
         # 賃金調整速度
         lambda_w = compute_wage_adjustment_speed(beta, theta_w)
@@ -305,11 +307,11 @@ class NewKeynesianModel:
         # === 解行列の構築 ===
         # 状態変数: [g, a, k, i, w] (5)
         # 制御変数: [y, π, r, q, rk, n] (6)
-        # ショック: [e_g, e_a, e_m, e_i, e_w] (5)
+        # ショック: [e_g, e_a, e_m, e_i, e_w, e_p] (6)
 
         n_state = 5
         n_control = 6
-        n_shock = 5
+        n_shock = 6
 
         # P: 状態遷移行列 (n_state x n_state)
         P = np.zeros((n_state, n_state))
@@ -373,6 +375,16 @@ class NewKeynesianModel:
         S[0, 4] = -wage_inflation_pass_through / kappa if kappa > 0 else 0.0  # e_w -> y (via inflation)
         S[5, 4] = n_y_coef * S[0, 4]  # e_w -> n (via y)
 
+        # e_p: 価格マークアップショック -> インフレに直接波及
+        # 価格上昇 -> 金利上昇 -> 産出減少
+        S[1, 5] = 1.0  # e_p -> π
+        # 価格硬直性が高いほど産出への即時下押しは小さくなる近似
+        S[0, 5] = -kappa * S[1, 5]
+        S[2, 5] = phi_pi * S[1, 5] + phi_y * S[0, 5]  # e_p -> r (Taylor則)
+        S[3, 5] = q_r_coefficient * S[2, 5]  # e_p -> q
+        S[4, 5] = S[0, 5]  # e_p -> rk (yと同じ)
+        S[5, 5] = n_y_coef * S[0, 5]  # e_p -> n (via y)
+
         return NKSolutionResult(
             P=P,
             Q=Q,
@@ -430,7 +442,7 @@ class NewKeynesianModel:
         """インパルス応答を計算
 
         Args:
-            shock: ショック名 ('e_g', 'e_a', 'e_m', 'e_i', 'e_w')
+            shock: ショック名 ('e_g', 'e_a', 'e_m', 'e_i', 'e_w', 'e_p')
             size: ショックサイズ
             periods: 期間数
 
@@ -448,9 +460,6 @@ class NewKeynesianModel:
         epsilon = np.zeros(self.vars.n_shock)
         epsilon[shock_idx] = size
 
-        # 金融政策ショック(e_m)は状態変数に入らない
-        is_monetary_shock = shock == "e_m"
-
         # t=0: 初期インパクト
         state[0] = sol.Q @ epsilon
 
@@ -459,14 +468,11 @@ class NewKeynesianModel:
             state[t] = sol.P @ state[t - 1]
 
         # 制御変数を計算
-        # 制御変数 = R @ 状態 で、状態にはショックが既に含まれている
-        # ただし金融政策ショックは状態に入らないのでt=0のみ直接効果
+        # 制御変数 = R @ 状態。非状態ショックは t=0 で S から直接効果を加える
         control = np.zeros((periods + 1, self.vars.n_control))
         for t in range(periods + 1):
             control[t] = sol.R @ state[t]
-            # 金融政策ショックはt=0のみ直接効果
-            if is_monetary_shock and t == 0:
-                # e_m の効果は S[:, 2] に格納
+            if t == 0:
                 control[t] += sol.S[:, shock_idx] * size
 
         # 結果を辞書に

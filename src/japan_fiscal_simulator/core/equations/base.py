@@ -43,6 +43,7 @@ class EquationCoefficients:
     w_current: float = 0.0  # Phase 2: 賃金
     n_current: float = 0.0  # Phase 2: 労働
     c_current: float = 0.0  # Phase 2: 消費（MRS用）
+    mc_current: float = 0.0  # Phase 3: 限界費用
 
     # 前期（t-1期）の係数 (C行列への寄与)
     y_lag: float = 0.0
@@ -63,6 +64,7 @@ class EquationCoefficients:
     e_m: float = 0.0
     e_i: float = 0.0
     e_w: float = 0.0  # Phase 2: 賃金マークアップショック
+    e_p: float = 0.0  # Phase 3: 価格マークアップショック
 
 
 class Equation(Protocol):

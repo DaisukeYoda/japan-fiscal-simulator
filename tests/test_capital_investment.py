@@ -162,10 +162,11 @@ class TestNewKeynesianModelExpanded:
         assert "rk" in model.vars.control_vars
         assert "n" in model.vars.control_vars  # Phase 2
 
-        # ショック: e_g, e_a, e_m, e_i, e_w (Phase 2で拡張)
-        assert model.vars.n_shock == 5
+        # ショック: e_g, e_a, e_m, e_i, e_w, e_p (Phase 3で拡張)
+        assert model.vars.n_shock == 6
         assert "e_i" in model.vars.shocks
         assert "e_w" in model.vars.shocks  # Phase 2
+        assert "e_p" in model.vars.shocks  # Phase 3
 
     def test_solution_matrices_shape(self) -> None:
         """解行列の形状が正しいことを確認"""
@@ -175,12 +176,12 @@ class TestNewKeynesianModelExpanded:
 
         # P: (5 x 5) 状態遷移 (Phase 2で拡張)
         assert sol.P.shape == (5, 5)
-        # Q: (5 x 5) ショック応答 (Phase 2で拡張)
-        assert sol.Q.shape == (5, 5)
+        # Q: (5 x 6) ショック応答 (Phase 3で拡張)
+        assert sol.Q.shape == (5, 6)
         # R: (6 x 5) 制御の状態依存 (Phase 2で拡張)
         assert sol.R.shape == (6, 5)
-        # S: (6 x 5) 制御へのショック直接効果 (Phase 2で拡張)
-        assert sol.S.shape == (6, 5)
+        # S: (6 x 6) 制御へのショック直接効果 (Phase 3で拡張)
+        assert sol.S.shape == (6, 6)
 
     def test_state_persistence(self) -> None:
         """状態変数の持続性が正しいことを確認"""
@@ -259,7 +260,7 @@ class TestDSGEModelExpanded:
 
     def test_n_shocks(self) -> None:
         """ショック数が正しいことを確認"""
-        assert N_SHOCKS == 6
+        assert N_SHOCKS == 7
 
     def test_policy_function_shape(self) -> None:
         """政策関数の形状が正しいことを確認"""

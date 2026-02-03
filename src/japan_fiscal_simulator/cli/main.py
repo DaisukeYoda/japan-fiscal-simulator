@@ -29,7 +29,9 @@ console = Console()
 def simulate(
     policy_type: Annotated[
         str,
-        typer.Argument(help="政策タイプ: consumption_tax, government_spending, transfer, monetary"),
+        typer.Argument(
+            help="政策タイプ: consumption_tax, government_spending, transfer, monetary, price_markup"
+        ),
     ],
     shock: Annotated[
         float,
@@ -53,6 +55,7 @@ def simulate(
     例:
         japan-fiscal simulate consumption_tax --shock -0.02 --periods 40 --graph
         japan-fiscal simulate government_spending --shock 0.01
+        japan-fiscal simulate price_markup --shock 0.01
     """
     simulate_command(policy_type, shock, periods, graph, output_dir)
 

@@ -46,13 +46,14 @@ def create_server() -> Server:
                     "properties": {
                         "policy_type": {
                             "type": "string",
-                            "description": "政策タイプ: consumption_tax（消費税）, government_spending（政府支出）, transfer（移転支払い）, monetary（金融政策）",
+                            "description": "政策タイプ: consumption_tax（消費税）, government_spending（政府支出）, transfer（移転支払い）, monetary（金融政策）, price_markup（価格マークアップ）",
                             "enum": [
                                 "consumption_tax",
                                 "government_spending",
                                 "transfer",
                                 "monetary",
                                 "subsidy",
+                                "price_markup",
                             ],
                         },
                         "shock_size": {

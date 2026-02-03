@@ -24,6 +24,10 @@ from japan_fiscal_simulator.core.equations.labor_demand import (
     LaborDemand,
     LaborDemandParameters,
 )
+from japan_fiscal_simulator.core.equations.marginal_cost import (
+    MarginalCostEquation,
+    MarginalCostParameters,
+)
 from japan_fiscal_simulator.core.equations.phillips_curve import (
     PhillipsCurve,
     PhillipsCurveParameters,
@@ -53,6 +57,8 @@ __all__ = [
     "InvestmentAdjustmentParameters",
     "LaborDemand",
     "LaborDemandParameters",
+    "MarginalCostEquation",
+    "MarginalCostParameters",
     "PhillipsCurve",
     "PhillipsCurveParameters",
     "TaylorRule",

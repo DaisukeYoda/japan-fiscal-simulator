@@ -80,6 +80,22 @@ class TestBlanchardKahnSolver:
         assert satisfied
         assert "充足" in message
 
+    def test_from_model_matrices_sign_conversion(self) -> None:
+        """from_model_matrices の符号変換が正しいことを確認"""
+        # x_t = 0.5 x_{t-1}
+        # A0 x_t = A1 E[x_{t+1}] + A_1 x_{t-1}
+        solver = BlanchardKahnSolver.from_model_matrices(
+            A0=np.array([[1.0]]),
+            A1=np.array([[0.0]]),
+            A_1=np.array([[0.5]]),
+            B=np.array([[0.0]]),
+            n_predetermined=1,
+        )
+
+        result = solver.solve()
+        assert result.P.shape == (1, 1)
+        assert result.P[0, 0] == pytest.approx(0.5, abs=1e-8)
+
 
 class TestBlanchardKahnResult:
     """BlanchardKahnResultのテスト"""

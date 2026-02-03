@@ -286,7 +286,7 @@ class BlanchardKahnSolver:
         """モデル行列から直接ソルバーを構築"""
         return BlanchardKahnSolver(
             A=A1,
-            B=A0,
+            B=-A0,
             C=A_1,
             D=B,
             n_predetermined=n_predetermined,

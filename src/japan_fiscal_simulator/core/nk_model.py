@@ -266,11 +266,14 @@ class NewKeynesianModel:
         # t=0
         state[0] = sol.Q @ epsilon
 
+        rho_p = self.params.shocks.rho_p
+
         # t=1..T
         for t in range(1, periods + 1):
             state[t] = sol.P @ state[t - 1]
+            if shock == "e_p":
+                state[t] += sol.Q[:, shock_idx] * (size * (rho_p**t))
 
-        rho_p = self.params.shocks.rho_p
         for t in range(periods + 1):
             control[t] = sol.R @ state[t]
             if t == 0:

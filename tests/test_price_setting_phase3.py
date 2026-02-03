@@ -10,7 +10,9 @@ from japan_fiscal_simulator.core.equations.phillips_curve import (
     PhillipsCurve,
     PhillipsCurveParameters,
 )
-from japan_fiscal_simulator.parameters.defaults import FirmParameters, ShockParameters
+from japan_fiscal_simulator.core.model import DSGEModel
+from japan_fiscal_simulator.core.simulation import ImpulseResponseSimulator
+from japan_fiscal_simulator.parameters.defaults import DefaultParameters, FirmParameters, ShockParameters
 
 
 class TestIndexedPhillipsCurve:
@@ -59,3 +61,15 @@ class TestPhase3Parameters:
         params = ShockParameters()
         assert params.rho_p == pytest.approx(0.90)
         assert params.sigma_p == pytest.approx(0.01)
+
+    def test_price_markup_irf_not_scaled_by_sigma_p(self) -> None:
+        params_base = ShockParameters(sigma_p=0.01)
+        params_alt = ShockParameters(sigma_p=0.0)
+
+        model_base = DSGEModel(params=DefaultParameters(shocks=params_base))
+        model_alt = DSGEModel(params=DefaultParameters(shocks=params_alt))
+
+        pi_base = ImpulseResponseSimulator(model_base).simulate("e_p", shock_size=0.01, periods=1)
+        pi_alt = ImpulseResponseSimulator(model_alt).simulate("e_p", shock_size=0.01, periods=1)
+
+        assert pi_base.get_response("pi")[0] == pytest.approx(pi_alt.get_response("pi")[0])

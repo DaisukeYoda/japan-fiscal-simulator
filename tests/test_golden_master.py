@@ -227,6 +227,9 @@ class TestImpulseResponseGoldenMaster:
         assert y[0] < 0
         # 名目金利は上昇
         assert R[0] > 0
+        # 価格マークアップショックの持続性で1期先も反応が続く
+        assert pi[1] > 0
+        assert R[1] > 0
 
 
 class TestFiscalMultiplierGoldenMaster:

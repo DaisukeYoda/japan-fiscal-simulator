@@ -470,10 +470,13 @@ class NewKeynesianModel:
         # 制御変数を計算
         # 制御変数 = R @ 状態。非状態ショックは t=0 で S から直接効果を加える
         control = np.zeros((periods + 1, self.vars.n_control))
+        rho_p = self.params.shocks.rho_p
         for t in range(periods + 1):
             control[t] = sol.R @ state[t]
             if t == 0:
                 control[t] += sol.S[:, shock_idx] * size
+            elif shock == "e_p":
+                control[t] += sol.S[:, shock_idx] * (size * (rho_p**t))
 
         # 結果を辞書に
         result = {}

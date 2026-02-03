@@ -175,9 +175,9 @@ class DSGEModel:
         pi_lag_weight = firm.iota_p / (1.0 + hh.beta * firm.iota_p)
         P[idx["pi"], idx["pi"]] = pi_lag_weight
 
-        # 名目金利
-        P[idx["R"], idx["g"]] = R[2, 0] * rho_g
-        P[idx["R"], idx["a"]] = R[2, 1] * rho_a
+        # 名目金利（Taylor則）: R_t = φ_π π_t + φ_y y_t
+        # x_t = P x_{t-1} の形では、y_t と π_t の遷移行から合成する
+        P[idx["R"], :] = cb.phi_pi * P[idx["pi"], :] + cb.phi_y * P[idx["y"], :]
 
         # 実質金利 = 名目金利 - 期待インフレ
         P[idx["r"], idx["R"]] = 1.0

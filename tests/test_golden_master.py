@@ -27,13 +27,14 @@ class TestNKModelGoldenMaster:
         sol = nk_model.solution
         P = sol.P
 
-        # 9方程式モデル: 状態変数 [g, a, k, i]
-        assert P.shape == (4, 4)
+        # 11方程式モデル (Phase 2): 状態変数 [g, a, k, i, w]
+        assert P.shape == (5, 5)
         # P の対角成分は持続性パラメータ
         np.testing.assert_allclose(P[0, 0], 0.9, rtol=1e-10)  # rho_g
         np.testing.assert_allclose(P[1, 1], 0.9, rtol=1e-10)  # rho_a
         np.testing.assert_allclose(P[2, 2], 1 - 0.025, rtol=1e-10)  # 1 - delta
         np.testing.assert_allclose(P[3, 3], 0.70, rtol=1e-10)  # rho_i
+        np.testing.assert_allclose(P[4, 4], 0.90, rtol=1e-10)  # rho_w (Phase 2)
         # 資本蓄積: k <- i
         np.testing.assert_allclose(P[2, 3], 0.025, rtol=1e-10)  # delta
 
@@ -42,12 +43,13 @@ class TestNKModelGoldenMaster:
         sol = nk_model.solution
         Q = sol.Q
 
-        # 9方程式モデル: ショック [e_g, e_a, e_m, e_i]
-        assert Q.shape == (4, 4)
+        # 11方程式モデル (Phase 2): ショック [e_g, e_a, e_m, e_i, e_w]
+        assert Q.shape == (5, 5)
         # Q[0, 0] = 1 (e_g -> g), Q[1, 1] = 1 (e_a -> a), Q[3, 3] = 1 (e_i -> i)
         np.testing.assert_allclose(Q[0, 0], 1.0, rtol=1e-10)
         np.testing.assert_allclose(Q[1, 1], 1.0, rtol=1e-10)
         np.testing.assert_allclose(Q[3, 3], 1.0, rtol=1e-10)
+        np.testing.assert_allclose(Q[4, 4], 1.0, rtol=1e-10)  # e_w -> w (Phase 2)
         # e_m は状態に影響しない
         np.testing.assert_allclose(Q[0, 2], 0.0, rtol=1e-10)
         np.testing.assert_allclose(Q[1, 2], 0.0, rtol=1e-10)
@@ -57,8 +59,8 @@ class TestNKModelGoldenMaster:
         sol = nk_model.solution
         R = sol.R
 
-        # 9方程式モデル: 制御変数 [y, π, r, q, rk] x 状態 [g, a, k, i]
-        assert R.shape == (5, 4)
+        # 11方程式モデル (Phase 2): 制御変数 [y, π, r, q, rk, n] x 状態 [g, a, k, i, w]
+        assert R.shape == (6, 5)
         # R[0, 0] = psi_yg (y の g への応答)
         # 値は正であるべき（政府支出は産出を増加させる）
         assert R[0, 0] > 0  # psi_yg
@@ -72,8 +74,8 @@ class TestNKModelGoldenMaster:
         sol = nk_model.solution
         S = sol.S
 
-        # 9方程式モデル: 制御変数 [y, π, r, q, rk] x ショック [e_g, e_a, e_m, e_i]
-        assert S.shape == (5, 4)
+        # 11方程式モデル (Phase 2): 制御変数 [y, π, r, q, rk, n] x ショック [e_g, e_a, e_m, e_i, e_w]
+        assert S.shape == (6, 5)
         # 金融引き締め(e_m > 0)は産出を減少させる
         assert S[0, 2] < 0  # psi_ym < 0
         # 状態に影響するショック(e_g, e_a, e_i)はSではなくQで効果を持つ

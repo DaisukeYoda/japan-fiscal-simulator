@@ -75,6 +75,21 @@ class InvestmentParameters:
 
 
 @dataclass(frozen=True)
+class LaborParameters:
+    """労働市場パラメータ
+
+    参考文献:
+    - Smets & Wouters (2007): θ_w ≈ 0.73, ε_w ≈ 10
+    - Erceg, Henderson & Levin (2000): 賃金Phillips曲線
+    - Sugo & Ueda (2008, 日本): θ_w ≈ 0.70
+    """
+
+    theta_w: float = 0.75  # Calvo賃金硬直性（75%が賃金維持）
+    epsilon_w: float = 10.0  # 労働の代替弾力性
+    iota_w: float = 0.5  # 賃金インデクセーション（0=後向き、1=前向き）
+
+
+@dataclass(frozen=True)
 class ShockParameters:
     """ショックパラメータ"""
 
@@ -86,6 +101,8 @@ class ShockParameters:
     rho_risk: float = 0.75  # リスクプレミアムショック
     # 投資固有技術ショック: Smets-Wouters (2007) では ρ_i ≈ 0.71
     rho_i: float = 0.70
+    # 賃金マークアップショック: Smets-Wouters (2007) では ρ_w ≈ 0.89
+    rho_w: float = 0.90
 
     # 標準偏差
     sigma_a: float = 0.01
@@ -94,6 +111,7 @@ class ShockParameters:
     sigma_m: float = 0.0025
     sigma_risk: float = 0.01
     sigma_i: float = 0.01
+    sigma_w: float = 0.01  # 賃金マークアップショック
 
 
 @dataclass
@@ -106,6 +124,7 @@ class DefaultParameters:
     central_bank: CentralBankParameters = field(default_factory=CentralBankParameters)
     financial: FinancialParameters = field(default_factory=FinancialParameters)
     investment: InvestmentParameters = field(default_factory=InvestmentParameters)
+    labor: LaborParameters = field(default_factory=LaborParameters)
     shocks: ShockParameters = field(default_factory=ShockParameters)
 
     def with_updates(
@@ -116,6 +135,7 @@ class DefaultParameters:
         central_bank: CentralBankParameters | None = None,
         financial: FinancialParameters | None = None,
         investment: InvestmentParameters | None = None,
+        labor: LaborParameters | None = None,
         shocks: ShockParameters | None = None,
     ) -> Self:
         """パラメータの一部を更新した新しいインスタンスを返す"""
@@ -127,6 +147,7 @@ class DefaultParameters:
             central_bank=central_bank if central_bank is not None else self.central_bank,
             financial=financial if financial is not None else self.financial,
             investment=investment if investment is not None else self.investment,
+            labor=labor if labor is not None else self.labor,
             shocks=shocks if shocks is not None else self.shocks,
         )
 

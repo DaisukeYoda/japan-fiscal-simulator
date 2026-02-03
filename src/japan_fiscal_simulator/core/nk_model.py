@@ -1,6 +1,6 @@
 """New Keynesian DSGEモデル
 
-9方程式NKモデル（コア3方程式 + 財政・資本ブロック）
+11方程式NKモデル（コア3方程式 + 財政・資本・労働ブロック）
 
 縮約形解法を使用（行列が特異な場合でも解ける）
 """
@@ -20,6 +20,8 @@ from japan_fiscal_simulator.core.equations import (
     InvestmentAdjustmentParameters,
     ISCurve,
     ISCurveParameters,
+    LaborDemand,
+    LaborDemandParameters,
     PhillipsCurve,
     PhillipsCurveParameters,
     TaylorRule,
@@ -27,8 +29,11 @@ from japan_fiscal_simulator.core.equations import (
     TechnologyProcess,
     TobinsQEquation,
     TobinsQParameters,
+    WagePhillipsCurve,
+    WagePhillipsCurveParameters,
     check_taylor_principle,
     compute_phillips_slope,
+    compute_wage_adjustment_speed,
 )
 from japan_fiscal_simulator.core.exceptions import ValidationError
 from japan_fiscal_simulator.core.steady_state import SteadyState, SteadyStateSolver
@@ -60,13 +65,16 @@ class ModelVariables:
     """モデル変数の定義"""
 
     # 状態変数（先決変数）- t-1期に決定
-    state_vars: tuple[str, ...] = ("g", "a", "k", "i")  # 政府支出、技術、資本、投資
+    # Phase 2: w（賃金）を追加（ラグ項あり）
+    state_vars: tuple[str, ...] = ("g", "a", "k", "i", "w")
 
     # 制御変数（ジャンプ変数）- t期に決定
-    control_vars: tuple[str, ...] = ("y", "pi", "r", "q", "rk")  # 産出、インフレ、金利、Tobin's Q、資本収益率
+    # Phase 2: n（労働）を追加
+    control_vars: tuple[str, ...] = ("y", "pi", "r", "q", "rk", "n")
 
     # ショック
-    shocks: tuple[str, ...] = ("e_g", "e_a", "e_m", "e_i")  # 政府支出、技術、金融政策、投資
+    # Phase 2: e_w（賃金マークアップショック）を追加
+    shocks: tuple[str, ...] = ("e_g", "e_a", "e_m", "e_i", "e_w")
 
     @property
     def n_state(self) -> int:
@@ -150,18 +158,21 @@ class NewKeynesianModel:
         TaylorRule,
         TobinsQEquation,
         CapitalRentalRateEquation,
+        WagePhillipsCurve,
+        LaborDemand,
     ]:
         """方程式オブジェクトを作成
 
-        9方程式を返す:
-        - 状態変数: g, a, k, i (4)
-        - 制御変数: y, π, r, q, rk (5)
+        11方程式を返す:
+        - 状態変数: g, a, k, i, w (5)
+        - 制御変数: y, π, r, q, rk, n (6)
         """
         hh = self.params.household
         firm = self.params.firm
         gov = self.params.government
         cb = self.params.central_bank
         inv = self.params.investment
+        labor = self.params.labor
         shocks = self.params.shocks
 
         g_process = GovernmentSpendingProcess(rho_g=shocks.rho_g)
@@ -170,11 +181,19 @@ class NewKeynesianModel:
         investment = InvestmentAdjustmentEquation(
             InvestmentAdjustmentParameters(S_double_prime=inv.S_double_prime)
         )
-        is_curve = ISCurve(ISCurveParameters(sigma=hh.sigma, g_y=gov.g_y_ratio))
+        is_curve = ISCurve(
+            ISCurveParameters(sigma=hh.sigma, g_y=gov.g_y_ratio, habit=hh.habit)
+        )
         phillips = PhillipsCurve(PhillipsCurveParameters(beta=hh.beta, theta=firm.theta))
         taylor = TaylorRule(TaylorRuleParameters(phi_pi=cb.phi_pi, phi_y=cb.phi_y))
         tobins_q = TobinsQEquation(TobinsQParameters(beta=hh.beta, delta=firm.delta))
         capital_rental = CapitalRentalRateEquation()
+        wage_phillips = WagePhillipsCurve(
+            WagePhillipsCurveParameters(
+                beta=hh.beta, theta_w=labor.theta_w, sigma=hh.sigma, phi=hh.phi
+            )
+        )
+        labor_demand = LaborDemand(LaborDemandParameters(alpha=firm.alpha))
 
         return (
             g_process,
@@ -186,14 +205,16 @@ class NewKeynesianModel:
             taylor,
             tobins_q,
             capital_rental,
+            wage_phillips,
+            labor_demand,
         )
 
     def _solve_reduced_form(self) -> NKSolutionResult:
         """縮約形で解く
 
-        9方程式NKモデルの解の形:
-            状態変数: g, a, k, i (4)
-            制御変数: y, π, r, q, rk (5)
+        11方程式NKモデルの解の形:
+            状態変数: g, a, k, i, w (5)
+            制御変数: y, π, r, q, rk, n (6)
 
         コアブロック (y, π, r) は g, a に依存:
             y_t = ψ_yg * g_t + ψ_ya * a_t
@@ -202,28 +223,37 @@ class NewKeynesianModel:
 
         資本ブロック (k, i, q, rk) はコアブロックと投資ショックに依存:
             rk_t = y_t - k_{t-1}  (限界生産物条件)
+
+        労働ブロック (w, n):
+            n_t = (1/(1-α))·(y_t - a_t) - (α/(1-α))·k_{t-1}  (労働需要)
+            w_t は賃金NKPCで動学的に決定
         """
         hh = self.params.household
         firm = self.params.firm
         gov = self.params.government
         cb = self.params.central_bank
-        inv = self.params.investment
+        labor = self.params.labor
         shocks = self.params.shocks
 
         # パラメータ
         beta = hh.beta
         sigma = hh.sigma
         delta = firm.delta
+        alpha = firm.alpha
         g_y = gov.g_y_ratio
         phi_pi = cb.phi_pi
         phi_y = cb.phi_y
-        S_double_prime = inv.S_double_prime
         rho_g = shocks.rho_g
         rho_a = shocks.rho_a
         rho_i = shocks.rho_i
+        rho_w = shocks.rho_w
+        theta_w = labor.theta_w
 
         # Phillips曲線スロープ（方程式モジュールを使用）
         kappa = compute_phillips_slope(beta, firm.theta)
+
+        # 賃金調整速度
+        lambda_w = compute_wage_adjustment_speed(beta, theta_w)
 
         # Taylor原則のチェック
         is_determinate, taylor_criterion = check_taylor_principle(phi_pi, phi_y, beta, kappa)
@@ -258,27 +288,28 @@ class NewKeynesianModel:
         psi_rm = phi_pi * psi_pim + phi_y * psi_ym + 1.0
 
         # === 資本ブロックの解法 ===
-        # Tobin's Q: q_t = β(1-δ)E[q_{t+1}] + β·E[rk_{t+1}] - r_t
-        # rk_t = y_t - k_{t-1} より、rk は y と k から決まる
-        # q は r と rk（の期待値）に依存
-
-        # Tobin's Q の係数（r への応答）
         q_r_coefficient = -1.0 / (1 - beta * (1 - delta))
 
-        # 投資調整: i_t = i_{t-1} + (1/S'')·q_t + e_i,t
-        # 注意: 正式な方程式では i は単位根（係数1）だが、
-        # 縮約形では rho_i を使って安定な動学を近似する。
-        # Phase 4 の Blanchard-Kahn 解法で正式に解く予定。
-        i_q_coefficient = 1.0 / S_double_prime
+        # === 労働ブロックの解法 ===
+        # 労働需要: n = (1/(1-α))·(y - a) - (α/(1-α))·k
+        labor_share = 1 - alpha
+        n_y_coef = 1.0 / labor_share
+        n_a_coef = -1.0 / labor_share
+        n_k_coef = -alpha / labor_share
+
+        # 労働の各ショックへの応答
+        psi_ng = n_y_coef * psi_yg  # e_g -> n (via y)
+        psi_na = n_y_coef * psi_ya + n_a_coef  # e_a -> n (via y and directly)
+        psi_nm = n_y_coef * psi_ym  # e_m -> n (via y)
 
         # === 解行列の構築 ===
-        # 状態変数: [g, a, k, i] (4)
-        # 制御変数: [y, π, r, q, rk] (5)
-        # ショック: [e_g, e_a, e_m, e_i] (4)
+        # 状態変数: [g, a, k, i, w] (5)
+        # 制御変数: [y, π, r, q, rk, n] (6)
+        # ショック: [e_g, e_a, e_m, e_i, e_w] (5)
 
-        n_state = 4
-        n_control = 5
-        n_shock = 4
+        n_state = 5
+        n_control = 6
+        n_shock = 5
 
         # P: 状態遷移行列 (n_state x n_state)
         P = np.zeros((n_state, n_state))
@@ -286,18 +317,20 @@ class NewKeynesianModel:
         P[1, 1] = rho_a  # a の AR(1) 係数
         P[2, 2] = 1 - delta  # k の減耗
         P[2, 3] = delta  # i -> k
-        # 投資の持続性: 正式には 1.0（単位根）だが、
-        # 縮約形では rho_i で近似して安定な IRF を得る
-        P[3, 3] = rho_i
+        P[3, 3] = rho_i  # 投資の持続性（近似）
+        # 賃金の持続性: 賃金NKPCから前期賃金への依存
+        # 縮約形では rho_w で近似
+        P[4, 4] = rho_w
 
         # Q: 状態へのショック応答 (n_state x n_shock)
         Q = np.zeros((n_state, n_shock))
         Q[0, 0] = 1.0  # e_g -> g
         Q[1, 1] = 1.0  # e_a -> a
         Q[3, 3] = 1.0  # e_i -> i
+        Q[4, 4] = 1.0  # e_w -> w
 
         # R: 制御変数の状態依存 (n_control x n_state)
-        # [y, π, r, q, rk] = R @ [g, a, k, i]
+        # [y, π, r, q, rk, n] = R @ [g, a, k, i, w]
         R = np.zeros((n_control, n_state))
         # y は g, a に依存
         R[0, 0] = psi_yg
@@ -311,22 +344,31 @@ class NewKeynesianModel:
         # q は r を通じて g, a に依存
         R[3, 0] = q_r_coefficient * psi_rg
         R[3, 1] = q_r_coefficient * psi_ra
-        # rk = y - k_{t-1} なので:
-        # rk は y と同じ g, a への応答 + k への負の依存
-        R[4, 0] = psi_yg  # rk の g への応答 = y の g への応答
-        R[4, 1] = psi_ya  # rk の a への応答 = y の a への応答
-        R[4, 2] = -1.0  # rk の k への応答 = -1（限界生産物逓減）
+        # rk = y - k_{t-1}
+        R[4, 0] = psi_yg
+        R[4, 1] = psi_ya
+        R[4, 2] = -1.0  # rk の k への応答
+        # n = (1/(1-α))·(y - a) - (α/(1-α))·k
+        R[5, 0] = psi_ng  # n の g への応答
+        R[5, 1] = psi_na  # n の a への応答（y経由 + 直接）
+        R[5, 2] = n_k_coef  # n の k への応答
 
         # S: 制御変数へのショック直接効果 (n_control x n_shock)
-        # 状態変数に影響するショック(e_g, e_a, e_i)は R @ Q で効果が計算される
-        # 状態変数に影響しないショック(e_m)のみ S で直接効果を指定
         S = np.zeros((n_control, n_shock))
-        # e_m: 金融政策ショック（状態に影響しない、制御に直接影響）
+        # e_m: 金融政策ショック
         S[0, 2] = psi_ym  # e_m -> y
         S[1, 2] = psi_pim  # e_m -> π
         S[2, 2] = psi_rm  # e_m -> r
         S[3, 2] = q_r_coefficient * psi_rm  # e_m -> q (via r)
         S[4, 2] = psi_ym  # e_m -> rk (y と同じ応答)
+        S[5, 2] = psi_nm  # e_m -> n (via y)
+        # e_w: 賃金マークアップショック -> インフレに波及
+        # 賃金上昇 -> 限界費用上昇 -> インフレ上昇 -> 金利上昇 -> 産出減少
+        # 簡略化: 直接的な産出・インフレへの効果を設定
+        wage_inflation_pass_through = lambda_w * 0.5  # 賃金からインフレへのパススルー
+        S[1, 4] = wage_inflation_pass_through  # e_w -> π
+        S[0, 4] = -wage_inflation_pass_through / kappa if kappa > 0 else 0.0  # e_w -> y (via inflation)
+        S[5, 4] = n_y_coef * S[0, 4]  # e_w -> n (via y)
 
         return NKSolutionResult(
             P=P,
@@ -343,7 +385,7 @@ class NewKeynesianModel:
 
         モデル形式: A @ E[y_{t+1}] + B @ y_t + C @ y_{t-1} + D @ ε_t = 0
 
-        y_t = [g, a, k, i, y, π, r, q, rk]  (状態 + 制御)
+        y_t = [g, a, k, i, w, y, π, r, q, rk, n]  (状態 + 制御)
         """
         (
             g_process,
@@ -355,6 +397,8 @@ class NewKeynesianModel:
             taylor,
             tobins_q,
             capital_rental,
+            wage_phillips,
+            labor_demand,
         ) = self._create_equations()
 
         equation_system = EquationSystem()
@@ -368,6 +412,8 @@ class NewKeynesianModel:
             taylor.coefficients(),
             tobins_q.coefficients(),
             capital_rental.coefficients(),
+            wage_phillips.coefficients(),
+            labor_demand.coefficients(),
         ]
 
         return equation_system.build_matrices(equations)
@@ -381,7 +427,7 @@ class NewKeynesianModel:
         """インパルス応答を計算
 
         Args:
-            shock: ショック名 ('e_g', 'e_a', 'e_m', 'e_i')
+            shock: ショック名 ('e_g', 'e_a', 'e_m', 'e_i', 'e_w')
             size: ショックサイズ
             periods: 期間数
 

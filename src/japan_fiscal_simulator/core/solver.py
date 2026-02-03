@@ -1,5 +1,6 @@
 """Blanchard-Kahn / Klein系の一般QZソルバー"""
 
+import warnings
 from dataclasses import dataclass
 
 import numpy as np
@@ -179,6 +180,7 @@ class BlanchardKahnSolver:
         solution = root(residual, x0=x0, method="hybr", tol=tol)
         x_candidate = np.asarray(solution.x, dtype=float)
         err = float(np.linalg.norm(residual(x_candidate), ord=np.inf))
+        used_fallback = False
 
         if (not solution.success) or err > 1e-6:
             lsq = least_squares(
@@ -192,6 +194,7 @@ class BlanchardKahnSolver:
             )
             x_candidate = np.asarray(lsq.x, dtype=float)
             err = float(np.linalg.norm(residual(x_candidate), ord=np.inf))
+            used_fallback = True
             if (not lsq.success) and err > 1e-6:
                 raise BlanchardKahnError(
                     "政策関数の非線形方程式が収束しません: "
@@ -201,6 +204,12 @@ class BlanchardKahnSolver:
         P, R = unpack(x_candidate)
         if err > max_policy_residual:
             raise BlanchardKahnError(f"政策関数残差が大きすぎます: {err:.2e}")
+        if used_fallback or err > 1e-6:
+            warnings.warn(
+                f"政策関数の残差がしきい値付近です (||res||_inf={err:.2e}, fallback={used_fallback})",
+                RuntimeWarning,
+                stacklevel=2,
+            )
 
         spectral_radius = float(np.max(np.abs(np.linalg.eigvals(P)))) if P.size > 0 else 0.0
         if spectral_radius >= 1.0 + 1e-6:

@@ -138,12 +138,31 @@ class NewKeynesianModel:
         i_share = firm.delta * firm.alpha / rental_rate_ss
         c_share = 1.0 - g_share - i_share
 
+        if g_share < 0:
+            raise ValidationError(f"g_share が負です: g_share={g_share:.4f}")
+
+        if i_share < 0:
+            raise ValidationError(f"i_share が負です: i_share={i_share:.4f}")
+
         if c_share <= 0:
             raise ValidationError(
                 f"資源制約シェアが不正です: c_share={c_share:.4f}, i_share={i_share:.4f}, g_share={g_share:.4f}"
             )
 
+        total = c_share + i_share + g_share
+        if abs(total - 1.0) > 1e-8:
+            raise ValidationError(
+                f"資源制約シェアの合計が1から乖離しています: total={total:.10f}"
+            )
+
         return c_share, i_share, g_share
+
+    def _shock_persistence(self, shock: str) -> float | None:
+        """非状態ショックの持続性を返す（該当しない場合はNone）"""
+        persistence = {
+            "e_p": self.params.shocks.rho_p,
+        }
+        return persistence.get(shock)
 
     def _create_equations(self) -> list[Equation]:
         """14方程式を構築"""
@@ -266,20 +285,20 @@ class NewKeynesianModel:
         # t=0
         state[0] = sol.Q @ epsilon
 
-        rho_p = self.params.shocks.rho_p
+        rho = self._shock_persistence(shock)
 
         # t=1..T
         for t in range(1, periods + 1):
             state[t] = sol.P @ state[t - 1]
-            if shock == "e_p":
-                state[t] += sol.Q[:, shock_idx] * (size * (rho_p**t))
+            if rho is not None:
+                state[t] += sol.Q[:, shock_idx] * (size * (rho**t))
 
         for t in range(periods + 1):
             control[t] = sol.R @ state[t]
             if t == 0:
                 control[t] += sol.S[:, shock_idx] * size
-            elif shock == "e_p":
-                control[t] += sol.S[:, shock_idx] * (size * (rho_p**t))
+            elif rho is not None:
+                control[t] += sol.S[:, shock_idx] * (size * (rho**t))
 
         result: dict[str, np.ndarray] = {}
         for i, var in enumerate(self.vars.state_vars):

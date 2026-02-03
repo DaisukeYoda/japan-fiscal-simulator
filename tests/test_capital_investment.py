@@ -11,6 +11,7 @@ from japan_fiscal_simulator.core.equations import (
     TobinsQEquation,
     TobinsQParameters,
 )
+from japan_fiscal_simulator.core.exceptions import ValidationError
 from japan_fiscal_simulator.core.model import N_SHOCKS, N_VARIABLES, VARIABLE_INDICES, DSGEModel
 from japan_fiscal_simulator.core.nk_model import NewKeynesianModel
 from japan_fiscal_simulator.parameters.defaults import DefaultParameters
@@ -242,6 +243,25 @@ class TestNewKeynesianModelExpanded:
 
         # 政府支出増加は産出を増加させるので、rk も増加するはず
         assert irf["rk"][0] > 0
+
+    def test_invalid_resource_share_raises(self) -> None:
+        """資源制約シェアが不正な場合は例外を投げる"""
+        params = DefaultParameters()
+        bad_government = params.government.__class__(
+            tau_c=params.government.tau_c,
+            tau_l=params.government.tau_l,
+            tau_k=params.government.tau_k,
+            g_y_ratio=-0.1,
+            b_y_ratio=params.government.b_y_ratio,
+            transfer_y_ratio=params.government.transfer_y_ratio,
+            rho_g=params.government.rho_g,
+            rho_tau=params.government.rho_tau,
+            phi_b=params.government.phi_b,
+        )
+        bad_params = params.with_updates(government=bad_government)
+        model = NewKeynesianModel(bad_params)
+        with pytest.raises(ValidationError):
+            _ = model.solution
 
 
 class TestDSGEModelExpanded:

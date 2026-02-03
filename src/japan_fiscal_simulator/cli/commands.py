@@ -91,7 +91,9 @@ class ModelFactoryManager:
 def simulate_command(
     policy_type: Annotated[
         str,
-        typer.Argument(help="政策タイプ: consumption_tax, government_spending, transfer, monetary"),
+        typer.Argument(
+            help="政策タイプ: consumption_tax, government_spending, transfer, monetary, price_markup"
+        ),
     ],
     shock: Annotated[
         float,
@@ -132,6 +134,7 @@ def simulate_command(
             "government_spending": "e_g",
             "transfer": "e_g",
             "monetary": "e_m",
+            "price_markup": "e_p",
         }
 
         shock_name = shock_mapping.get(policy_type)

@@ -45,7 +45,7 @@ PREDETERMINED_VARS = ["k", "i", "g", "b", "tau_c", "a"]
 N_PREDETERMINED = len(PREDETERMINED_VARS)
 
 # ショック変数
-SHOCK_VARS = ["e_a", "e_g", "e_m", "e_tau", "e_risk", "e_i"]
+SHOCK_VARS = ["e_a", "e_g", "e_m", "e_tau", "e_risk", "e_i", "e_p"]
 N_SHOCKS = len(SHOCK_VARS)
 
 
@@ -120,7 +120,7 @@ class DSGEModel:
     def _build_policy_function(self) -> PolicyFunctionResult:
         """NKモデルの解を拡張して政策関数を構築
 
-        NKモデルの8変数 (g, a, k, i, y, π, r, q) から
+        NKモデルの状態・制御ブロックから
         16変数システムへ拡張する。
         """
         nk_sol = self.nk_model.solution
@@ -142,7 +142,7 @@ class DSGEModel:
         P = np.zeros((n, n))
 
         # NKモデルからの状態遷移行列を取得
-        # nk_sol.P は (4 x 4): [g, a, k, i] x [g, a, k, i]
+        # nk_sol.P は (5 x 5): [g, a, k, i, w] x [g, a, k, i, w]
         nk_P = nk_sol.P
         rho_g = shocks.rho_g
         rho_a = shocks.rho_a
@@ -159,7 +159,7 @@ class DSGEModel:
         # 投資持続性
         P[idx["i"], idx["i"]] = nk_P[3, 3]  # rho_i
 
-        # NKモデルのR行列: (4 x 4): [y, π, r, q] x [g, a, k, i]
+        # NKモデルのR行列: [y, π, r, q, rk, n] x [g, a, k, i, w]
         R = nk_sol.R
 
         # 制御変数の状態依存（次期の状態から計算）
@@ -171,10 +171,13 @@ class DSGEModel:
         # π_{t+1}
         P[idx["pi"], idx["g"]] = R[1, 0] * rho_g
         P[idx["pi"], idx["a"]] = R[1, 1] * rho_a
+        # 価格インデクセーション（前期インフレへの依存）
+        pi_lag_weight = firm.iota_p / (1.0 + hh.beta * firm.iota_p)
+        P[idx["pi"], idx["pi"]] = pi_lag_weight
 
-        # 名目金利
-        P[idx["R"], idx["g"]] = R[2, 0] * rho_g
-        P[idx["R"], idx["a"]] = R[2, 1] * rho_a
+        # 名目金利（Taylor則）: R_t = φ_π π_t + φ_y y_t
+        # x_t = P x_{t-1} の形では、y_t と π_t の遷移行から合成する
+        P[idx["R"], :] = cb.phi_pi * P[idx["pi"], :] + cb.phi_y * P[idx["y"], :]
 
         # 実質金利 = 名目金利 - 期待インフレ
         P[idx["r"], idx["R"]] = 1.0
@@ -209,8 +212,10 @@ class DSGEModel:
         P[idx["w"], idx["y"]] = 1.0
         P[idx["w"], idx["n"]] = -1.0
 
-        # 限界費用
-        P[idx["mc"], idx["w"]] = 1.0
+        # 限界費用: mc_t = α * rk_t + (1-α) * w_t - a_t
+        P[idx["mc"], idx["rk"]] = firm.alpha
+        P[idx["mc"], idx["w"]] = 1.0 - firm.alpha
+        P[idx["mc"], idx["a"]] = -1.0
 
         # 政府債務: 財政ルール（導出係数を使用）
         P[idx["b"], idx["b"]] = trans.debt_persistence
@@ -220,14 +225,13 @@ class DSGEModel:
         P[idx["tau_c"], idx["tau_c"]] = shocks.rho_tau_c
 
         # ショック応答行列 Q
-        # ショック順序: e_a, e_g, e_m, e_tau, e_risk, e_i
+        # ショック順序: e_a, e_g, e_m, e_tau, e_risk, e_i, e_p
         Q = np.zeros((n, N_SHOCKS))
 
-        # NKモデルのS行列: (4 x 4) for [y, π, r, q] x [e_g, e_a, e_m, e_i]
-        # ただし S は非状態ショック(e_m)のみ非ゼロ
+        # NKモデルのS行列: (6 x 6) for [y, π, r, q, rk, n] x [e_g, e_a, e_m, e_i, e_w, e_p]
         S = nk_sol.S
 
-        # NKモデルの状態へのショック応答 nk_Q: (4 x 4) for [g, a, k, i] x [e_g, e_a, e_m, e_i]
+        # NKモデルの状態へのショック応答 nk_Q: (5 x 6) for [g, a, k, i, w] x shocks
         nk_Q = nk_sol.Q
 
         # e_a: 技術ショック (index 0)
@@ -296,6 +300,26 @@ class DSGEModel:
         Q[idx["y"], 5] = nk_Q[3, 3] * trans.investment_accelerator
         Q[idx["c"], 5] = Q[idx["y"], 5] * c_y_ratio
         Q[idx["rk"], 5] = Q[idx["y"], 5]
+
+        # e_p: 価格マークアップショック (index 6)
+        # e_p は非状態ショックで、制御変数に直接影響
+        Q[idx["y"], 6] = S[0, 5]
+        Q[idx["pi"], 6] = S[1, 5]
+        Q[idx["R"], 6] = S[2, 5]
+        Q[idx["r"], 6] = S[2, 5] - S[1, 5]
+        Q[idx["q"], 6] = S[3, 5]
+        Q[idx["rk"], 6] = S[4, 5]
+        Q[idx["n"], 6] = S[5, 5]
+        Q[idx["w"], 6] = Q[idx["y"], 6] - Q[idx["n"], 6]
+        Q[idx["c"], 6] = Q[idx["y"], 6] * c_y_ratio
+
+        # 限界費用ショック応答: mc = α * rk + (1-α) * w - a
+        for shock_idx in range(N_SHOCKS):
+            Q[idx["mc"], shock_idx] = (
+                firm.alpha * Q[idx["rk"], shock_idx]
+                + (1.0 - firm.alpha) * Q[idx["w"], shock_idx]
+                - Q[idx["a"], shock_idx]
+            )
 
         # 固有値（状態遷移行列の対角成分）
         eigenvalues = np.diag(P)

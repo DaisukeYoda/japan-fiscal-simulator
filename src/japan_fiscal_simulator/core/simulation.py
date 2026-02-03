@@ -88,6 +88,10 @@ class ImpulseResponseSimulator:
 
         policy = self.model.policy_function
         shock_idx = SHOCK_VARS.index(shock_name)
+        shock_persistence = {
+            "e_p": self.model.params.shocks.rho_p,
+        }
+        rho = shock_persistence.get(shock_name)
 
         # 状態変数の時系列
         n_vars = N_VARIABLES
@@ -107,6 +111,9 @@ class ImpulseResponseSimulator:
         P = policy.P
         for t in range(1, periods + 1):
             x_history[t] = P @ x_history[t - 1]
+            # 非状態ショックのAR(1)持続性を反映（Phase 3: 価格マークアップ）
+            if rho is not None:
+                x_history[t] += policy.Q[:, shock_idx] * (shock_size * (rho**t))
 
         # 結果を変数名でマッピング（t=0のインパクトを含む）
         responses = {}

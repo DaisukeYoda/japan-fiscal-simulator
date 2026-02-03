@@ -90,7 +90,7 @@ def simulate_policy(
     """財政政策のインパルス応答シミュレーションを実行
 
     Args:
-        policy_type: 政策タイプ（consumption_tax, government_spending, transfer, monetary）
+        policy_type: 政策タイプ（consumption_tax, government_spending, transfer, monetary, price_markup）
         shock_size: ショックサイズ（例: -0.02 = 2%減税）
         periods: シミュレーション期間（四半期）
         shock_type: ショックタイプ（temporary, permanent, gradual）
@@ -110,6 +110,7 @@ def simulate_policy(
         "transfer": "e_g",  # 移転は政府支出として近似
         "monetary": "e_m",
         "subsidy": "e_g",
+        "price_markup": "e_p",
     }
 
     shock_name = shock_mapping.get(policy_type)

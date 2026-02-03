@@ -43,8 +43,8 @@ class TestNKModelGoldenMaster:
         sol = nk_model.solution
         Q = sol.Q
 
-        # 11方程式モデル (Phase 2): ショック [e_g, e_a, e_m, e_i, e_w]
-        assert Q.shape == (5, 5)
+        # 11方程式モデル (Phase 3): ショック [e_g, e_a, e_m, e_i, e_w, e_p]
+        assert Q.shape == (5, 6)
         # Q[0, 0] = 1 (e_g -> g), Q[1, 1] = 1 (e_a -> a), Q[3, 3] = 1 (e_i -> i)
         np.testing.assert_allclose(Q[0, 0], 1.0, rtol=1e-10)
         np.testing.assert_allclose(Q[1, 1], 1.0, rtol=1e-10)
@@ -74,8 +74,8 @@ class TestNKModelGoldenMaster:
         sol = nk_model.solution
         S = sol.S
 
-        # 11方程式モデル (Phase 2): 制御変数 [y, π, r, q, rk, n] x ショック [e_g, e_a, e_m, e_i, e_w]
-        assert S.shape == (6, 5)
+        # 11方程式モデル (Phase 3): 制御変数 [y, π, r, q, rk, n] x ショック [e_g, e_a, e_m, e_i, e_w, e_p]
+        assert S.shape == (6, 6)
         # 金融引き締め(e_m > 0)は産出を減少させる
         assert S[0, 2] < 0  # psi_ym < 0
         # 状態に影響するショック(e_g, e_a, e_i)はSではなくQで効果を持つ
@@ -85,9 +85,9 @@ class TestNKModelGoldenMaster:
     def test_kappa_value(self, nk_model: NewKeynesianModel) -> None:
         """Phillips曲線スロープkappaの値を検証"""
         sol = nk_model.solution
-        # kappa = (1 - theta)(1 - beta*theta) / theta
-        # theta = 0.75, beta = 0.999
-        expected_kappa = (1 - 0.75) * (1 - 0.999 * 0.75) / 0.75
+        # kappa = ((1 - theta)(1 - beta*theta) / theta) / (1 + beta*iota_p)
+        # theta = 0.75, beta = 0.999, iota_p(=psi) = 0.5
+        expected_kappa = ((1 - 0.75) * (1 - 0.999 * 0.75) / 0.75) / (1 + 0.999 * 0.5)
         np.testing.assert_allclose(sol.kappa, expected_kappa, rtol=1e-10)
 
     def test_determinacy(self, nk_model: NewKeynesianModel) -> None:
@@ -213,6 +213,23 @@ class TestImpulseResponseGoldenMaster:
         assert y[0] < 0
         # 名目金利は上昇
         assert R[0] > 0
+
+    def test_price_markup_shock_response(self, simulator: ImpulseResponseSimulator) -> None:
+        """価格マークアップショックの応答を検証"""
+        result = simulator.simulate("e_p", shock_size=0.01, periods=20)
+        y = result.get_response("y")
+        pi = result.get_response("pi")
+        R = result.get_response("R")
+
+        # 価格マークアップ上昇でインフレは上昇
+        assert pi[0] > 0
+        # 金利上昇を通じて産出は低下
+        assert y[0] < 0
+        # 名目金利は上昇
+        assert R[0] > 0
+        # 価格マークアップショックの持続性で1期先も反応が続く
+        assert pi[1] > 0
+        assert R[1] > 0
 
 
 class TestFiscalMultiplierGoldenMaster:

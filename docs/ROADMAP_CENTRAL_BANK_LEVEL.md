@@ -184,9 +184,9 @@ y_t = a_t + α × k_{t-1} + (1-α) × n_t
 
 **実装タスク**:
 
-- [ ] `equations/marginal_cost.py` の作成
-- [ ] Phillips曲線のインデクセーション対応
-- [ ] 価格マークアップショックの追加
+- [x] `equations/marginal_cost.py` の作成
+- [x] Phillips曲線のインデクセーション対応
+- [x] 価格マークアップショックの追加
 
 ---
 

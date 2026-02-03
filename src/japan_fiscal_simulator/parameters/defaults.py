@@ -25,6 +25,11 @@ class FirmParameters:
     epsilon: float = 6.0  # 財の代替弾力性
     psi: float = 0.5  # 価格インデクセーション
 
+    @property
+    def iota_p(self) -> float:
+        """価格インデクセーション係数（psi の互換別名）"""
+        return self.psi
+
 
 @dataclass(frozen=True)
 class GovernmentParameters:
@@ -103,6 +108,8 @@ class ShockParameters:
     rho_i: float = 0.70
     # 賃金マークアップショック: Smets-Wouters (2007) では ρ_w ≈ 0.89
     rho_w: float = 0.90
+    # 価格マークアップショック: Phase 3
+    rho_p: float = 0.90
 
     # 標準偏差
     sigma_a: float = 0.01
@@ -112,6 +119,7 @@ class ShockParameters:
     sigma_risk: float = 0.01
     sigma_i: float = 0.01
     sigma_w: float = 0.01  # 賃金マークアップショック
+    sigma_p: float = 0.01  # 価格マークアップショック
 
 
 @dataclass

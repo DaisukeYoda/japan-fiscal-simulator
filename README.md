@@ -33,6 +33,7 @@ uvx jpfs --help
 ```bash
 # シミュレーション実行
 jpfs simulate consumption_tax --shock -0.02 --periods 40 --graph
+jpfs simulate price_markup --shock 0.01 --periods 40
 
 # 財政乗数計算
 jpfs multiplier government_spending --horizon 8

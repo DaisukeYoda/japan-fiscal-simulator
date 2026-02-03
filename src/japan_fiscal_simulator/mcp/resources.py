@@ -47,6 +47,7 @@ def get_current_parameters(
             "theta": params.firm.theta,
             "epsilon": params.firm.epsilon,
             "psi": params.firm.psi,
+            "iota_p": params.firm.iota_p,
         },
         "government": {
             "tau_c": params.government.tau_c,

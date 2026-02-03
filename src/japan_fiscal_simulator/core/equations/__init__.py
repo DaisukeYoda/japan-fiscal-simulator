@@ -20,10 +20,6 @@ from japan_fiscal_simulator.core.equations.investment import (
     TobinsQParameters,
 )
 from japan_fiscal_simulator.core.equations.is_curve import ISCurve, ISCurveParameters
-from japan_fiscal_simulator.core.equations.labor_demand import (
-    LaborDemand,
-    LaborDemandParameters,
-)
 from japan_fiscal_simulator.core.equations.phillips_curve import (
     PhillipsCurve,
     PhillipsCurveParameters,
@@ -33,11 +29,6 @@ from japan_fiscal_simulator.core.equations.taylor_rule import (
     TaylorRule,
     TaylorRuleParameters,
     check_taylor_principle,
-)
-from japan_fiscal_simulator.core.equations.wage_phillips import (
-    WagePhillipsCurve,
-    WagePhillipsCurveParameters,
-    compute_wage_adjustment_speed,
 )
 
 __all__ = [
@@ -51,8 +42,6 @@ __all__ = [
     "ISCurveParameters",
     "InvestmentAdjustmentEquation",
     "InvestmentAdjustmentParameters",
-    "LaborDemand",
-    "LaborDemandParameters",
     "PhillipsCurve",
     "PhillipsCurveParameters",
     "TaylorRule",
@@ -60,9 +49,6 @@ __all__ = [
     "TechnologyProcess",
     "TobinsQEquation",
     "TobinsQParameters",
-    "WagePhillipsCurve",
-    "WagePhillipsCurveParameters",
     "check_taylor_principle",
     "compute_phillips_slope",
-    "compute_wage_adjustment_speed",
 ]

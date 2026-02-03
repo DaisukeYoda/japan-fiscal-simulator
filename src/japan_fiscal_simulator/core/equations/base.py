@@ -28,7 +28,6 @@ class EquationCoefficients:
     i_forward: float = 0.0
     q_forward: float = 0.0
     rk_forward: float = 0.0
-    w_forward: float = 0.0  # Phase 2: 賃金
 
     # 当期（t期）の係数 (B行列への寄与)
     y_current: float = 0.0
@@ -40,9 +39,6 @@ class EquationCoefficients:
     i_current: float = 0.0
     q_current: float = 0.0
     rk_current: float = 0.0
-    w_current: float = 0.0  # Phase 2: 賃金
-    n_current: float = 0.0  # Phase 2: 労働
-    c_current: float = 0.0  # Phase 2: 消費（MRS用）
 
     # 前期（t-1期）の係数 (C行列への寄与)
     y_lag: float = 0.0
@@ -54,15 +50,12 @@ class EquationCoefficients:
     i_lag: float = 0.0
     q_lag: float = 0.0
     rk_lag: float = 0.0
-    w_lag: float = 0.0  # Phase 2: 賃金
-    c_lag: float = 0.0  # Phase 2: 消費（習慣形成用）
 
     # ショック係数 (D行列への寄与)
     e_g: float = 0.0
     e_a: float = 0.0
     e_m: float = 0.0
     e_i: float = 0.0
-    e_w: float = 0.0  # Phase 2: 賃金マークアップショック
 
 
 class Equation(Protocol):

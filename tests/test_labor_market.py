@@ -73,10 +73,8 @@ class TestWagePhillipsCurve:
         assert coef.w_forward < 0
         # w_lag < 0（後向きインデクセーション）
         assert coef.w_lag < 0
-        # c_current < 0（MRSの消費項）
-        assert coef.c_current < 0
-        # n_current < 0（MRSの労働項）
-        assert coef.n_current < 0
+        # mrs_current < 0（MRS項）
+        assert coef.mrs_current < 0
         # e_w = -1（ショック）
         assert coef.e_w == -1.0
 

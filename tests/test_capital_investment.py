@@ -138,7 +138,7 @@ class TestCapitalRentalRate:
 
 
 class TestNewKeynesianModelExpanded:
-    """拡張NKモデル（11方程式）のテスト"""
+    """拡張NKモデル（14方程式）のテスト"""
 
     def test_model_variables(self) -> None:
         """モデル変数が正しく設定されていることを確認"""
@@ -153,14 +153,17 @@ class TestNewKeynesianModelExpanded:
         assert "i" in model.vars.state_vars
         assert "w" in model.vars.state_vars  # Phase 2
 
-        # 制御変数: y, pi, r, q, rk, n (Phase 2で拡張)
-        assert model.vars.n_control == 6
+        # 制御変数: y, pi, r, q, rk, n, c, mc, mrs (Phase 4)
+        assert model.vars.n_control == 9
         assert "y" in model.vars.control_vars
         assert "pi" in model.vars.control_vars
         assert "r" in model.vars.control_vars
         assert "q" in model.vars.control_vars
         assert "rk" in model.vars.control_vars
-        assert "n" in model.vars.control_vars  # Phase 2
+        assert "n" in model.vars.control_vars
+        assert "c" in model.vars.control_vars
+        assert "mc" in model.vars.control_vars
+        assert "mrs" in model.vars.control_vars
 
         # ショック: e_g, e_a, e_m, e_i, e_w, e_p (Phase 3で拡張)
         assert model.vars.n_shock == 6
@@ -174,14 +177,13 @@ class TestNewKeynesianModelExpanded:
         model = NewKeynesianModel(params)
         sol = model.solution
 
-        # P: (5 x 5) 状態遷移 (Phase 2で拡張)
+        # P: (5 x 5) 状態遷移
         assert sol.P.shape == (5, 5)
-        # Q: (5 x 6) ショック応答 (Phase 3で拡張)
+        # Q: (5 x 6) ショック応答
         assert sol.Q.shape == (5, 6)
-        # R: (6 x 5) 制御の状態依存 (Phase 2で拡張)
-        assert sol.R.shape == (6, 5)
-        # S: (6 x 6) 制御へのショック直接効果 (Phase 3で拡張)
-        assert sol.S.shape == (6, 6)
+        # R/S: 9制御変数への写像
+        assert sol.R.shape == (9, 5)
+        assert sol.S.shape == (9, 6)
 
     def test_state_persistence(self) -> None:
         """状態変数の持続性が正しいことを確認"""
@@ -189,12 +191,12 @@ class TestNewKeynesianModelExpanded:
         model = NewKeynesianModel(params)
         sol = model.solution
 
-        # 対角成分が持続性パラメータ
+        # g, a はAR(1)持続性にほぼ一致
         assert sol.P[0, 0] == pytest.approx(params.shocks.rho_g)  # g
         assert sol.P[1, 1] == pytest.approx(params.shocks.rho_a)  # a
-        assert sol.P[2, 2] == pytest.approx(1 - params.firm.delta)  # k
-        # 投資: 縮約形では rho_i で近似（正式には単位根だが安定化のため）
-        assert sol.P[3, 3] == pytest.approx(params.shocks.rho_i)
+        # そのほかの状態遷移は構造解の同時決定なので安定性のみ確認
+        assert abs(sol.P[2, 2]) < 1.0
+        assert abs(sol.P[3, 3]) < 1.0
 
     def test_capital_accumulation_in_P(self) -> None:
         """資本蓄積の係数が正しいことを確認"""
@@ -202,11 +204,9 @@ class TestNewKeynesianModelExpanded:
         model = NewKeynesianModel(params)
         sol = model.solution
 
-        # k_t = (1-δ)k_{t-1} + δi_t
-        # P[k, k] = 1 - δ
-        # P[k, i] = δ
-        assert sol.P[2, 2] == pytest.approx(1 - params.firm.delta)
-        assert sol.P[2, 3] == pytest.approx(params.firm.delta)
+        # 構造解では同時決定だが、kはiに正で反応し自己持続性も持つ
+        assert sol.P[2, 2] > 0
+        assert sol.P[2, 3] > 0
 
     def test_investment_shock_response(self) -> None:
         """投資ショックへの応答が正しいことを確認"""
@@ -219,9 +219,9 @@ class TestNewKeynesianModelExpanded:
         # i が正の応答を示す
         assert irf["i"][0] > 0
 
-        # k は徐々に蓄積
-        assert irf["k"][0] == pytest.approx(0.0, abs=1e-6)  # 初期は影響なし
-        assert irf["k"][10] > 0  # 時間経過で蓄積
+        # k は正に反応し、蓄積の効果が続く
+        assert irf["k"][0] > 0
+        assert irf["k"][10] > 0
 
         # q は投資調整を反映
         assert "q" in irf

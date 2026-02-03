@@ -29,6 +29,7 @@ class EquationCoefficients:
     q_forward: float = 0.0
     rk_forward: float = 0.0
     w_forward: float = 0.0  # Phase 2: 賃金
+    mrs_forward: float = 0.0  # Phase 4: 限界代替率
 
     # 当期（t期）の係数 (B行列への寄与)
     y_current: float = 0.0
@@ -44,6 +45,7 @@ class EquationCoefficients:
     n_current: float = 0.0  # Phase 2: 労働
     c_current: float = 0.0  # Phase 2: 消費（MRS用）
     mc_current: float = 0.0  # Phase 3: 限界費用
+    mrs_current: float = 0.0  # Phase 4: 限界代替率
 
     # 前期（t-1期）の係数 (C行列への寄与)
     y_lag: float = 0.0
@@ -57,6 +59,7 @@ class EquationCoefficients:
     rk_lag: float = 0.0
     w_lag: float = 0.0  # Phase 2: 賃金
     c_lag: float = 0.0  # Phase 2: 消費（習慣形成用）
+    mrs_lag: float = 0.0  # Phase 4: 限界代替率
 
     # ショック係数 (D行列への寄与)
     e_g: float = 0.0

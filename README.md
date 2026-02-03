@@ -9,8 +9,9 @@
 ## 特徴
 
 - **5部門DSGEモデル**: 家計、企業、政府、中央銀行、金融部門
+- **14方程式の構造システム**: state 5変数 + control 9変数
 - **日本経済向けキャリブレーション**: 低金利環境、高債務水準、消費税10%
-- **Blanchard-Kahn解法**: 合理的期待均衡の数値解法
+- **QZベースBK/Klein解法**: 合理的期待均衡の一般解法
 - **MCPサーバー**: Claude Desktopとの連携
 - **CLI**: コマンドラインからのシミュレーション実行
 
@@ -98,7 +99,7 @@ Claude Desktopの設定ファイル（`claude_desktop_config.json`）に追加:
 
 - Calvo型価格硬直性
 - CES生産関数
-- New Keynesian Phillips曲線
+- New Keynesian Phillips曲線（価格インデクセーション）
 
 ### 政府部門
 
@@ -164,7 +165,7 @@ pytest tests/
 ### 型チェック
 
 ```bash
-mypy src/japan_fiscal
+mypy src/japan_fiscal_simulator
 ```
 
 ## 今後の拡張候補

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**jpfs (Japan Fiscal Simulator)** is a New Keynesian DSGE model implementation for simulating fiscal policy effects on the Japanese economy. It features a 5-sector model (households, firms, government, central bank, financial), Blanchard-Kahn solution method, MCP server integration for Claude Desktop, and a CLI interface.
+**jpfs (Japan Fiscal Simulator)** is a New Keynesian DSGE model implementation for simulating fiscal policy effects on the Japanese economy. It features a 5-sector model (households, firms, government, central bank, financial), a QZ-based Blanchard-Kahn/Klein solution method, MCP server integration for Claude Desktop, and a CLI interface.
 
 ## Commands
 
@@ -44,11 +44,11 @@ uv run jpfs mcp  # Start MCP server
 
 ### Core Model (`src/japan_fiscal_simulator/core/`)
 
-- `nk_model.py`: Core 3-equation New Keynesian model (IS curve, Phillips curve, Taylor rule) with reduced-form solution
-- `model.py`: Extended 14-variable DSGE model that wraps `NewKeynesianModel` and derives additional variables from steady-state relationships
+- `nk_model.py`: 14方程式構造NKモデル（state 5, control 9）をBKで解く
+- `model.py`: Extended 16-variable DSGE model that wraps `NewKeynesianModel` and adds fiscal/risk/tax blocks
 - `steady_state.py`: Steady-state solver
 - `simulation.py`: `ImpulseResponseSimulator` and `FiscalMultiplierCalculator` for policy analysis
-- `solver.py` / `linear_solver.py`: Blanchard-Kahn solution methods
+- `solver.py` / `linear_solver.py`: QZ-based Blanchard-Kahn solution methods (`linear_solver.py` is compatibility wrapper)
 
 ### Parameters (`src/japan_fiscal_simulator/parameters/`)
 
@@ -64,9 +64,9 @@ uv run jpfs mcp  # Start MCP server
 
 ### Variable System
 
-The model tracks 14 variables (defined in `VARIABLE_INDICES`):
-- State variables: `y` (output), `c` (consumption), `i` (investment), `n` (labor), `k` (capital), `pi` (inflation), `r` (real rate), `R` (nominal rate), `w` (wage), `mc` (marginal cost), `g` (government spending), `b` (debt), `tau_c` (consumption tax), `a` (technology)
-- Shocks: `e_a`, `e_g`, `e_m`, `e_tau`, `e_risk`
+The model tracks 16 variables (defined in `VARIABLE_INDICES`):
+- `y`, `c`, `i`, `n`, `k`, `pi`, `r`, `R`, `w`, `mc`, `g`, `b`, `tau_c`, `a`, `q`, `rk`
+- Shocks: `e_a`, `e_g`, `e_m`, `e_tau`, `e_risk`, `e_i`, `e_p`
 
 ## Python Version
 

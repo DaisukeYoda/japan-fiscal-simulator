@@ -12,7 +12,11 @@ from japan_fiscal_simulator.core.equations.phillips_curve import (
 )
 from japan_fiscal_simulator.core.model import DSGEModel
 from japan_fiscal_simulator.core.simulation import ImpulseResponseSimulator
-from japan_fiscal_simulator.parameters.defaults import DefaultParameters, FirmParameters, ShockParameters
+from japan_fiscal_simulator.parameters.defaults import (
+    DefaultParameters,
+    FirmParameters,
+    ShockParameters,
+)
 
 
 class TestIndexedPhillipsCurve:

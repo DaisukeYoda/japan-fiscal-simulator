@@ -250,6 +250,7 @@ class NewKeynesianModel:
         rho_i = shocks.rho_i
         rho_w = shocks.rho_w
         theta_w = labor.theta_w
+        sigma_p = shocks.sigma_p
 
         # Phillips曲線スロープ（方程式モジュールを使用）
         kappa = compute_phillips_slope(beta, firm.theta, firm.iota_p)
@@ -377,7 +378,9 @@ class NewKeynesianModel:
 
         # e_p: 価格マークアップショック -> インフレに直接波及
         # 価格上昇 -> 金利上昇 -> 産出減少
-        S[1, 5] = 1.0  # e_p -> π
+        # sigma_p=0.01 を 1単位ショックとして正規化
+        price_markup_scale = sigma_p / 0.01
+        S[1, 5] = 1.0 * price_markup_scale  # e_p -> π
         # 価格硬直性が高いほど産出への即時下押しは小さくなる近似
         S[0, 5] = -kappa * S[1, 5]
         S[2, 5] = phi_pi * S[1, 5] + phi_y * S[0, 5]  # e_p -> r (Taylor則)

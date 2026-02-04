@@ -23,6 +23,11 @@ class SolverConstants:
     default_tolerance: float = 1e-10
     default_max_iterations: int = 1000
     verification_tolerance: float = 1e-6
+    policy_residual_warning: float = 1e-6
+    policy_residual_max: float = 1e-3
+    initial_guess_p_clip: float = 0.95
+    initial_guess_r_clip: float = 5.0
+    nonlinear_solver_max_nfev: int = 6000
 
     # 反復法の初期値
     initial_output: float = 1.0

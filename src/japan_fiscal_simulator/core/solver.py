@@ -11,6 +11,7 @@ from japan_fiscal_simulator.core.exceptions import (
     BlanchardKahnError,
     SingularMatrixError,
 )
+from japan_fiscal_simulator.parameters.constants import SOLVER_CONSTANTS
 
 __all__ = ["BlanchardKahnError", "BlanchardKahnResult", "BlanchardKahnSolver"]
 
@@ -90,9 +91,9 @@ class BlanchardKahnSolver:
         if not 0 <= self.n_forward_looking <= self.n_total:
             raise ValueError("n_forward_looking が不正です")
 
-    def solve(self, tol: float = 1e-8) -> BlanchardKahnResult:
+    def solve(self, tol: float = 1e-8, *, emit_warnings: bool = False) -> BlanchardKahnResult:
         """Blanchard-Kahn解法を実行"""
-        residual_reliability_tol = 1e-6
+        residual_reliability_tol = SOLVER_CONSTANTS.policy_residual_warning
         eigenvalues, n_stable, n_unstable = self._qz_diagnostics(tol)
 
         if n_unstable != self.n_forward_looking:
@@ -106,7 +107,10 @@ class BlanchardKahnSolver:
                 f"{n_unstable} < {self.n_forward_looking} (不定解)"
             )
 
-        P, R, policy_residual_inf, used_fallback = self._solve_policy_matrices(tol)
+        P, R, policy_residual_inf, used_fallback = self._solve_policy_matrices(
+            tol,
+            emit_warnings=emit_warnings,
+        )
         Q, S = self._solve_shock_matrices(P, R, tol)
         numerically_reliable = policy_residual_inf <= residual_reliability_tol
         message = "QZ分解と係数一致条件により解を取得しました"
@@ -167,12 +171,24 @@ class BlanchardKahnSolver:
 
         return eigenvalues, n_stable, n_unstable
 
-    def _solve_policy_matrices(self, tol: float) -> tuple[np.ndarray, np.ndarray, float, bool]:
-        """P, R を係数一致条件から求める"""
+    def _solve_policy_matrices(
+        self,
+        tol: float,
+        *,
+        emit_warnings: bool,
+    ) -> tuple[np.ndarray, np.ndarray, float, bool]:
+        """P, R を係数一致条件から求める
+
+        QZでBK条件と安定/不安定の本数判定を行った後、政策関数は係数一致の非線形系
+        を解いて求める。Z分割法に比べて、分割ブロックがほぼ特異なケースでも同じ
+        実装で扱えるため、この手法を採用している。
+        """
         ns = self.n_state
         nc = self.n_control
         n = self.n_total
-        max_policy_residual = 1e-3
+        max_policy_residual = SOLVER_CONSTANTS.policy_residual_max
+        warning_residual = SOLVER_CONSTANTS.policy_residual_warning
+        stability_tol = SOLVER_CONSTANTS.verification_tolerance
 
         identity_state = np.eye(ns)
 
@@ -209,7 +225,7 @@ class BlanchardKahnSolver:
                     ftol=tol,
                     xtol=tol,
                     gtol=tol,
-                    max_nfev=6000,
+                    max_nfev=SOLVER_CONSTANTS.nonlinear_solver_max_nfev,
                 )
                 x_lsq = np.asarray(lsq.x, dtype=float)
                 err_lsq = float(np.linalg.norm(residual(x_lsq), ord=np.inf))
@@ -220,7 +236,7 @@ class BlanchardKahnSolver:
             for cand_x, cand_err, cand_success in candidates:
                 cand_P, _ = unpack(cand_x)
                 cand_sr = float(np.max(np.abs(np.linalg.eigvals(cand_P)))) if cand_P.size > 0 else 0.0
-                if cand_sr < 1.0 + 1e-6:
+                if cand_sr < 1.0 + stability_tol:
                     stable_candidates.append((cand_x, cand_err, cand_success))
 
             selected_pool = stable_candidates if stable_candidates else candidates
@@ -237,7 +253,7 @@ class BlanchardKahnSolver:
         P, R = unpack(x_candidate)
         if err > max_policy_residual:
             raise BlanchardKahnError(f"政策関数残差が大きすぎます: {err:.2e}")
-        if used_fallback or err > 1e-6:
+        if emit_warnings and (used_fallback or err > warning_residual):
             warnings.warn(
                 f"政策関数の残差がしきい値付近です (||res||_inf={err:.2e}, fallback={used_fallback})",
                 RuntimeWarning,
@@ -245,7 +261,7 @@ class BlanchardKahnSolver:
             )
 
         spectral_radius = float(np.max(np.abs(np.linalg.eigvals(P)))) if P.size > 0 else 0.0
-        if spectral_radius >= 1.0 + 1e-6:
+        if spectral_radius >= 1.0 + stability_tol:
             raise BlanchardKahnError(
                 f"状態遷移行列Pが不安定です（最大固有値絶対値={spectral_radius:.4f}）"
             )
@@ -278,8 +294,10 @@ class BlanchardKahnSolver:
             P0 = np.linalg.solve(state_matrix, -lag_matrix)
 
         # 数値発散を避けるため初期値を緩やかにクリップ
-        P0 = np.clip(P0, -0.95, 0.95)
-        R0 = np.clip(R0, -5.0, 5.0)
+        p_clip = SOLVER_CONSTANTS.initial_guess_p_clip
+        r_clip = SOLVER_CONSTANTS.initial_guess_r_clip
+        P0 = np.clip(P0, -p_clip, p_clip)
+        R0 = np.clip(R0, -r_clip, r_clip)
 
         return np.concatenate([P0.ravel(), R0.ravel()])
 
@@ -312,7 +330,7 @@ class BlanchardKahnSolver:
         S = solution[ns:, :]
 
         check = lhs_q @ Q + lhs_s @ S + self.D
-        if float(np.linalg.norm(check, ord=np.inf)) > 1e-6 + tol:
+        if float(np.linalg.norm(check, ord=np.inf)) > SOLVER_CONSTANTS.verification_tolerance + tol:
             raise SingularMatrixError("ショック応答行列の整合性検証に失敗しました")
 
         return Q, S

@@ -194,6 +194,14 @@ class TestLaborParameters:
         assert params.shocks.rho_w == 0.90
         assert params.shocks.sigma_w == 0.01
 
+    def test_persistent_non_state_shock_metadata(self) -> None:
+        """非状態ショックの持続性メタデータが提供されることを確認"""
+        shocks = ShockParameters(rho_w=0.8, rho_p=0.4)
+        persistence = shocks.persistent_non_state_shocks
+
+        assert persistence["e_w"] == pytest.approx(0.8)
+        assert persistence["e_p"] == pytest.approx(0.4)
+
     def test_with_updates_labor(self) -> None:
         """with_updatesでlaborパラメータを更新できることを確認"""
         params = DefaultParameters()

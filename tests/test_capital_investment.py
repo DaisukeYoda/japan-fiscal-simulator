@@ -1,5 +1,6 @@
 """資本蓄積と投資方程式のテスト"""
 
+import numpy as np
 import pytest
 
 from japan_fiscal_simulator.core.equations import (
@@ -199,15 +200,26 @@ class TestNewKeynesianModelExpanded:
         assert abs(sol.P[2, 2]) < 1.0
         assert abs(sol.P[3, 3]) < 1.0
 
-    def test_capital_accumulation_in_P(self) -> None:
-        """資本蓄積の係数が正しいことを確認"""
+    def test_capital_accumulation_identity_in_solution(self) -> None:
+        """構造解でも資本蓄積恒等式が行列レベルで成立することを確認"""
         params = DefaultParameters()
         model = NewKeynesianModel(params)
         sol = model.solution
 
-        # 構造解では同時決定だが、kはiに正で反応し自己持続性も持つ
-        assert sol.P[2, 2] > 0
-        assert sol.P[2, 3] > 0
+        delta = params.firm.delta
+        idx_k = model.vars.state_vars.index("k")
+        idx_i = model.vars.state_vars.index("i")
+
+        basis_k = np.zeros(model.vars.n_state)
+        basis_k[idx_k] = 1.0
+
+        # k_t = (1-δ)k_{t-1} + δi_t かつ i_t = P_i s_{t-1} + Q_i ε_t より、
+        # P_k = (1-δ)e_k' + δP_i, Q_k = δQ_i が成立する
+        expected_p_row = (1.0 - delta) * basis_k + delta * sol.P[idx_i, :]
+        expected_q_row = delta * sol.Q[idx_i, :]
+
+        np.testing.assert_allclose(sol.P[idx_k, :], expected_p_row, atol=1e-10, rtol=1e-8)
+        np.testing.assert_allclose(sol.Q[idx_k, :], expected_q_row, atol=1e-10, rtol=1e-8)
 
     def test_investment_shock_response(self) -> None:
         """投資ショックへの応答が正しいことを確認"""

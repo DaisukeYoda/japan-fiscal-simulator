@@ -11,9 +11,11 @@ from japan_fiscal_simulator.core.equations.wage_phillips import (
     WagePhillipsCurveParameters,
     compute_wage_adjustment_speed,
 )
+from japan_fiscal_simulator.core.nk_model import NewKeynesianModel
 from japan_fiscal_simulator.parameters.defaults import (
     DefaultParameters,
     LaborParameters,
+    ShockParameters,
 )
 
 
@@ -201,3 +203,20 @@ class TestLaborParameters:
         assert updated.labor.theta_w == 0.70
         # 他のパラメータは変更されていない
         assert updated.household.beta == params.household.beta
+
+    def test_wage_markup_persistence_affects_irf(self) -> None:
+        """rho_w の違いが e_w ショック応答に反映されることを確認"""
+        base = DefaultParameters()
+        low = base.with_updates(shocks=ShockParameters(rho_w=0.0))
+        high = base.with_updates(shocks=ShockParameters(rho_w=0.9))
+
+        model_low = NewKeynesianModel(low)
+        model_high = NewKeynesianModel(high)
+
+        irf_low = model_low.impulse_response("e_w", size=0.01, periods=2)
+        irf_high = model_high.impulse_response("e_w", size=0.01, periods=2)
+
+        # 持続性が高いほど、次期以降の反応が大きい
+        assert abs(irf_high["w"][1]) > abs(irf_low["w"][1])
+        # 状態に持続ショックが入るため、少なくとも1期先の状態が変わる
+        assert irf_high["k"][1] != pytest.approx(irf_low["k"][1])

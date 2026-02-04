@@ -36,6 +36,9 @@ class BlanchardKahnResult:
     bk_satisfied: bool
     eigenvalues: np.ndarray
     message: str
+    policy_residual_inf: float = 0.0
+    used_fallback: bool = False
+    numerically_reliable: bool = True
 
 
 class BlanchardKahnSolver:
@@ -89,6 +92,7 @@ class BlanchardKahnSolver:
 
     def solve(self, tol: float = 1e-8) -> BlanchardKahnResult:
         """Blanchard-Kahn解法を実行"""
+        residual_reliability_tol = 1e-6
         eigenvalues, n_stable, n_unstable = self._qz_diagnostics(tol)
 
         if n_unstable != self.n_forward_looking:
@@ -102,8 +106,12 @@ class BlanchardKahnSolver:
                 f"{n_unstable} < {self.n_forward_looking} (不定解)"
             )
 
-        P, R = self._solve_policy_matrices(tol)
+        P, R, policy_residual_inf, used_fallback = self._solve_policy_matrices(tol)
         Q, S = self._solve_shock_matrices(P, R, tol)
+        numerically_reliable = policy_residual_inf <= residual_reliability_tol
+        message = "QZ分解と係数一致条件により解を取得しました"
+        if not numerically_reliable:
+            message += f" (警告: 政策残差={policy_residual_inf:.2e})"
 
         return BlanchardKahnResult(
             P=P,
@@ -117,7 +125,10 @@ class BlanchardKahnSolver:
             n_forward_looking=self.n_forward_looking,
             bk_satisfied=True,
             eigenvalues=eigenvalues,
-            message="QZ分解と係数一致条件により解を取得しました",
+            message=message,
+            policy_residual_inf=policy_residual_inf,
+            used_fallback=used_fallback,
+            numerically_reliable=numerically_reliable,
         )
 
     def _qz_diagnostics(self, tol: float) -> tuple[np.ndarray, int, int]:
@@ -156,7 +167,7 @@ class BlanchardKahnSolver:
 
         return eigenvalues, n_stable, n_unstable
 
-    def _solve_policy_matrices(self, tol: float) -> tuple[np.ndarray, np.ndarray]:
+    def _solve_policy_matrices(self, tol: float) -> tuple[np.ndarray, np.ndarray, float, bool]:
         """P, R を係数一致条件から求める"""
         ns = self.n_state
         nc = self.n_control
@@ -242,7 +253,7 @@ class BlanchardKahnSolver:
         if n != ns + nc:
             raise BlanchardKahnError("内部次元計算が不正です")
 
-        return P, R
+        return P, R, err, used_fallback
 
     def _initial_guess(self) -> np.ndarray:
         """非線形解法の初期値"""

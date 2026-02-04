@@ -38,6 +38,9 @@ class TestBlanchardKahnSolver:
         assert result.S.shape == (model.vars.n_control, model.vars.n_shock)
         assert result.n_control == model.vars.n_control
         assert result.n_forward_looking == int(np.linalg.matrix_rank(matrices.A))
+        assert result.policy_residual_inf >= 0.0
+        assert isinstance(result.used_fallback, bool)
+        assert isinstance(result.numerically_reliable, bool)
 
     def test_indeterminate_when_phi_pi_below_one(self) -> None:
         """phi_pi<1近傍で不定解が発生することを確認"""

@@ -161,6 +161,7 @@ class NewKeynesianModel:
         """非状態ショックの持続性を返す（該当しない場合はNone）"""
         persistence = {
             "e_p": self.params.shocks.rho_p,
+            "e_w": self.params.shocks.rho_w,
         }
         return persistence.get(shock)
 

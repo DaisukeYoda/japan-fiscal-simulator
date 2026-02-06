@@ -21,25 +21,27 @@ class VariableIndices:
     a: int = 1  # 技術
     k: int = 2  # 資本
     i: int = 3  # 投資
+    w: int = 4  # 賃金
 
     # 制御変数（ジャンプ変数）
-    y: int = 4  # 産出
-    pi: int = 5  # インフレ
-    r: int = 6  # 金利
-    q: int = 7  # Tobin's Q
-    rk: int = 8  # 資本収益率
+    y: int = 5  # 産出
+    pi: int = 6  # インフレ
+    r: int = 7  # 金利
+    q: int = 8  # Tobin's Q
+    rk: int = 9  # 資本収益率
+    n: int = 10  # 労働
 
     @property
     def n_state(self) -> int:
-        return 4
-
-    @property
-    def n_control(self) -> int:
         return 5
 
     @property
+    def n_control(self) -> int:
+        return 6
+
+    @property
     def n_total(self) -> int:
-        return 9
+        return 11
 
 
 @dataclass(frozen=True)
@@ -50,10 +52,11 @@ class ShockIndices:
     e_a: int = 1  # 技術ショック
     e_m: int = 2  # 金融政策ショック
     e_i: int = 3  # 投資固有技術ショック
+    e_w: int = 4  # 賃金マークアップショック
 
     @property
     def n_shocks(self) -> int:
-        return 4
+        return 5
 
 
 @dataclass
@@ -121,6 +124,7 @@ class EquationSystem:
         A[row, idx.i] = eq.i_forward
         A[row, idx.q] = eq.q_forward
         A[row, idx.rk] = eq.rk_forward
+        A[row, idx.w] = eq.w_forward
 
         # 当期（t期）→ B行列
         B[row, idx.y] = eq.y_current
@@ -132,6 +136,8 @@ class EquationSystem:
         B[row, idx.i] = eq.i_current
         B[row, idx.q] = eq.q_current
         B[row, idx.rk] = eq.rk_current
+        B[row, idx.w] = eq.w_current
+        B[row, idx.n] = eq.n_current
 
         # 前期（t-1期）→ C行列
         C[row, idx.y] = eq.y_lag
@@ -143,9 +149,11 @@ class EquationSystem:
         C[row, idx.i] = eq.i_lag
         C[row, idx.q] = eq.q_lag
         C[row, idx.rk] = eq.rk_lag
+        C[row, idx.w] = eq.w_lag
 
         # ショック → D行列
         D[row, sidx.e_g] = eq.e_g
         D[row, sidx.e_a] = eq.e_a
         D[row, sidx.e_m] = eq.e_m
         D[row, sidx.e_i] = eq.e_i
+        D[row, sidx.e_w] = eq.e_w

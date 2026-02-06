@@ -27,6 +27,9 @@ class WagePhillipsCurveParameters:
     theta_w: float  # Calvo賃金硬直性（賃金を変更しない確率）
     sigma: float  # 異時点間代替弾力性の逆数
     phi: float  # 労働供給弾力性の逆数（Frisch弾力性）
+    c_y_ratio: float = 0.0  # 消費代入: Y/C
+    c_g_ratio: float = 0.0  # 消費代入: G/C
+    c_i_ratio: float = 0.0  # 消費代入: I/C
 
 
 def compute_wage_adjustment_speed(beta: float, theta_w: float) -> float:
@@ -95,11 +98,18 @@ class WagePhillipsCurve:
         c_current_coef = -lambda_w * sigma / denom
         n_current_coef = -lambda_w * phi / denom
 
+        # 消費を代入: c = (Y/C)y - (G/C)g - (I/C)i
+        y_from_c = c_current_coef * self.params.c_y_ratio
+        g_from_c = -c_current_coef * self.params.c_g_ratio
+        i_from_c = -c_current_coef * self.params.c_i_ratio
+
         return EquationCoefficients(
             w_current=w_current_coef,
             w_forward=w_forward_coef,
             w_lag=w_lag_coef,
-            c_current=c_current_coef,
+            y_current=y_from_c,
+            g_current=g_from_c,
+            i_current=i_from_c,
             n_current=n_current_coef,
             e_w=-1.0,
         )

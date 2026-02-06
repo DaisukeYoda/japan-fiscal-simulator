@@ -33,8 +33,6 @@ class TestNKModelGoldenMaster:
         np.testing.assert_allclose(P[0, 0], 0.9, rtol=1e-10)  # rho_g
         np.testing.assert_allclose(P[1, 1], 0.9, rtol=1e-10)  # rho_a
         np.testing.assert_allclose(P[2, 2], 1 - 0.025, rtol=1e-10)  # 1 - delta
-        np.testing.assert_allclose(P[3, 3], 0.70, rtol=1e-10)  # rho_i
-        np.testing.assert_allclose(P[4, 4], 0.90, rtol=1e-10)  # rho_w (Phase 2)
         # 資本蓄積: k <- i
         np.testing.assert_allclose(P[2, 3], 0.025, rtol=1e-10)  # delta
 
@@ -45,11 +43,9 @@ class TestNKModelGoldenMaster:
 
         # 11方程式モデル (Phase 2): ショック [e_g, e_a, e_m, e_i, e_w]
         assert Q.shape == (5, 5)
-        # Q[0, 0] = 1 (e_g -> g), Q[1, 1] = 1 (e_a -> a), Q[3, 3] = 1 (e_i -> i)
+        # Q[0, 0] = 1 (e_g -> g), Q[1, 1] = 1 (e_a -> a)
         np.testing.assert_allclose(Q[0, 0], 1.0, rtol=1e-10)
         np.testing.assert_allclose(Q[1, 1], 1.0, rtol=1e-10)
-        np.testing.assert_allclose(Q[3, 3], 1.0, rtol=1e-10)
-        np.testing.assert_allclose(Q[4, 4], 1.0, rtol=1e-10)  # e_w -> w (Phase 2)
         # e_m は状態に影響しない
         np.testing.assert_allclose(Q[0, 2], 0.0, rtol=1e-10)
         np.testing.assert_allclose(Q[1, 2], 0.0, rtol=1e-10)
@@ -94,6 +90,7 @@ class TestNKModelGoldenMaster:
         """解の決定性を検証"""
         sol = nk_model.solution
         # Taylor原則が満たされている場合は determinate
+        assert sol.bk_satisfied
         assert sol.determinacy == "determinate"
 
 

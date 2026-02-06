@@ -11,6 +11,7 @@ from japan_fiscal_simulator.core.equations.wage_phillips import (
     WagePhillipsCurveParameters,
     compute_wage_adjustment_speed,
 )
+from japan_fiscal_simulator.core.nk_model import NewKeynesianModel
 from japan_fiscal_simulator.parameters.defaults import (
     DefaultParameters,
     LaborParameters,
@@ -63,6 +64,9 @@ class TestWagePhillipsCurve:
             theta_w=0.75,
             sigma=1.5,
             phi=2.0,
+            c_y_ratio=1.2,
+            c_g_ratio=0.2,
+            c_i_ratio=0.1,
         )
         eq = WagePhillipsCurve(params)
         coef = eq.coefficients()
@@ -73,8 +77,10 @@ class TestWagePhillipsCurve:
         assert coef.w_forward < 0
         # w_lag < 0（後向きインデクセーション）
         assert coef.w_lag < 0
-        # c_current < 0（MRSの消費項）
-        assert coef.c_current < 0
+        # 消費代入の係数
+        assert coef.y_current < 0
+        assert coef.g_current > 0
+        assert coef.i_current > 0
         # n_current < 0（MRSの労働項）
         assert coef.n_current < 0
         # e_w = -1（ショック）
@@ -87,6 +93,9 @@ class TestWagePhillipsCurve:
             theta_w=0.75,
             sigma=1.5,
             phi=2.0,
+            c_y_ratio=1.2,
+            c_g_ratio=0.2,
+            c_i_ratio=0.1,
         )
         eq = WagePhillipsCurve(params)
         coef = eq.coefficients()
@@ -104,7 +113,13 @@ class TestWagePhillipsCurve:
     def test_name_and_description(self) -> None:
         """名前と説明のテスト"""
         params = WagePhillipsCurveParameters(
-            beta=0.99, theta_w=0.75, sigma=1.5, phi=2.0
+            beta=0.99,
+            theta_w=0.75,
+            sigma=1.5,
+            phi=2.0,
+            c_y_ratio=1.0,
+            c_g_ratio=0.2,
+            c_i_ratio=0.1,
         )
         eq = WagePhillipsCurve(params)
 
@@ -114,7 +129,13 @@ class TestWagePhillipsCurve:
     def test_lambda_w_property(self) -> None:
         """λ_w プロパティのテスト"""
         params = WagePhillipsCurveParameters(
-            beta=0.99, theta_w=0.75, sigma=1.5, phi=2.0
+            beta=0.99,
+            theta_w=0.75,
+            sigma=1.5,
+            phi=2.0,
+            c_y_ratio=1.0,
+            c_g_ratio=0.2,
+            c_i_ratio=0.1,
         )
         eq = WagePhillipsCurve(params)
 
@@ -203,3 +224,15 @@ class TestLaborParameters:
         assert updated.labor.theta_w == 0.70
         # 他のパラメータは変更されていない
         assert updated.household.beta == params.household.beta
+
+
+class TestWageShockIRF:
+    """賃金ショックのIRFテスト"""
+
+    def test_wage_shock_affects_wage(self) -> None:
+        params = DefaultParameters()
+        model = NewKeynesianModel(params)
+
+        irf = model.impulse_response("e_w", size=0.01, periods=10)
+
+        assert irf["w"][0] != 0.0

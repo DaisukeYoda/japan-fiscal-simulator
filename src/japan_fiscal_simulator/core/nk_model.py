@@ -36,6 +36,7 @@ from japan_fiscal_simulator.core.equations import (
     compute_wage_adjustment_speed,
 )
 from japan_fiscal_simulator.core.exceptions import ValidationError
+from japan_fiscal_simulator.core.linear_solver import LinearRESolver
 from japan_fiscal_simulator.core.steady_state import SteadyState, SteadyStateSolver
 
 if TYPE_CHECKING:
@@ -56,6 +57,7 @@ class NKSolutionResult:
 
     # 診断情報
     kappa: float  # Phillips曲線スロープ
+    bk_satisfied: bool  # BK条件充足
     determinacy: str  # 解の性質
     message: str
 
@@ -143,7 +145,7 @@ class NewKeynesianModel:
     @property
     def solution(self) -> NKSolutionResult:
         if self._solution is None:
-            self._solution = self._solve_reduced_form()
+            self._solution = self._solve_linear_rational_expectations()
         return self._solution
 
     def _create_equations(
@@ -174,6 +176,7 @@ class NewKeynesianModel:
         inv = self.params.investment
         labor = self.params.labor
         shocks = self.params.shocks
+        firm = self.params.firm
 
         g_process = GovernmentSpendingProcess(rho_g=shocks.rho_g)
         a_process = TechnologyProcess(rho_a=shocks.rho_a)
@@ -188,9 +191,22 @@ class NewKeynesianModel:
         taylor = TaylorRule(TaylorRuleParameters(phi_pi=cb.phi_pi, phi_y=cb.phi_y))
         tobins_q = TobinsQEquation(TobinsQParameters(beta=hh.beta, delta=firm.delta))
         capital_rental = CapitalRentalRateEquation()
+        # 消費代入係数: c = (Y/C)y - (G/C)g - (I/C)i
+        i_y_ratio = firm.delta * firm.alpha / (1 / hh.beta - 1 + firm.delta)
+        c_y_ratio = 1 - gov.g_y_ratio - i_y_ratio
+        y_c_ratio = 1.0 / c_y_ratio
+        g_c_ratio = gov.g_y_ratio / c_y_ratio
+        i_c_ratio = i_y_ratio / c_y_ratio
+
         wage_phillips = WagePhillipsCurve(
             WagePhillipsCurveParameters(
-                beta=hh.beta, theta_w=labor.theta_w, sigma=hh.sigma, phi=hh.phi
+                beta=hh.beta,
+                theta_w=labor.theta_w,
+                sigma=hh.sigma,
+                phi=hh.phi,
+                c_y_ratio=y_c_ratio,
+                c_g_ratio=g_c_ratio,
+                c_i_ratio=i_c_ratio,
             )
         )
         labor_demand = LaborDemand(LaborDemandParameters(alpha=firm.alpha))
@@ -379,8 +395,35 @@ class NewKeynesianModel:
             R=R,
             S=S,
             kappa=kappa,
+            bk_satisfied=is_determinate,
             determinacy=determinacy,
             message=f"縮約形解法で解を取得 (Taylor criterion = {taylor_criterion:.3f})",
+        )
+
+    def _solve_linear_rational_expectations(self) -> NKSolutionResult:
+        """LinearRESolverで解く（Phase2: 賃金NKPCを内生化）"""
+        matrices = self._build_system_matrices()
+        solver = LinearRESolver(
+            A=matrices.A,
+            B=matrices.B,
+            C=matrices.C,
+            D=matrices.D,
+            n_state=self.vars.n_state,
+        )
+        result = solver.solve()
+
+        kappa = compute_phillips_slope(self.params.household.beta, self.params.firm.theta)
+        determinacy = "determinate" if result.bk_satisfied else "indeterminate"
+
+        return NKSolutionResult(
+            P=result.P,
+            Q=result.Q,
+            R=result.R,
+            S=result.S,
+            kappa=kappa,
+            bk_satisfied=result.bk_satisfied,
+            determinacy=determinacy,
+            message=result.message,
         )
 
     def _build_system_matrices(self) -> SystemMatrices:
@@ -410,12 +453,12 @@ class NewKeynesianModel:
             a_process.coefficients(),
             capital.coefficients(),
             investment.coefficients(),
+            wage_phillips.coefficients(),
             is_curve.coefficients(),
             phillips.coefficients(),
             taylor.coefficients(),
             tobins_q.coefficients(),
             capital_rental.coefficients(),
-            wage_phillips.coefficients(),
             labor_demand.coefficients(),
         ]
 

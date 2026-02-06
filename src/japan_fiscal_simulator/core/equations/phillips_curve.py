@@ -26,6 +26,7 @@ class PhillipsCurveParameters:
     beta: float  # 割引率
     theta: float  # Calvo価格硬直性（価格を変更しない確率）
     iota_p: float = 0.0  # 価格インデクセーション
+    rho_p: float = 0.0  # 価格マークアップショックの持続性
 
 
 def compute_phillips_slope(beta: float, theta: float, iota_p: float = 0.0) -> float:
@@ -75,6 +76,12 @@ class PhillipsCurve:
         denom = 1 + self.params.beta * self.params.iota_p
         pi_lag_coef = self.params.iota_p / denom
         pi_forward_coef = self.params.beta / denom
+        # e_p のAR(1)持続性が期待項を通じて当期へ与える影響を反映
+        shock_scale_denom = 1.0 - pi_forward_coef * self.params.rho_p
+        if abs(shock_scale_denom) < 1e-10:
+            shock_scale = 1.0
+        else:
+            shock_scale = 1.0 / shock_scale_denom
 
         return EquationCoefficients(
             # 期待値（t+1期）
@@ -83,5 +90,5 @@ class PhillipsCurve:
             pi_current=1.0,
             pi_lag=-pi_lag_coef,
             mc_current=-self._kappa,
-            e_p=-1.0,
+            e_p=-shock_scale,
         )

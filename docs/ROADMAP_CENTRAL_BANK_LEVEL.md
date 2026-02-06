@@ -204,10 +204,19 @@ A × E[x_{t+1}] = B × x_t + C × ε_t
 
 **実装タスク**:
 
-- [ ] `solver.py` の完全実装
-- [ ] 一般化固有値分解
-- [ ] Schur分解による数値安定化
-- [ ] BK条件の自動チェック
+- [x] `solver.py` の完全実装
+- [x] 一般化固有値分解（QZ分解）
+- [x] Schur分解による数値安定化
+- [x] BK条件の自動チェック
+- [x] 14方程式（state=5, control=9）への拡張
+- [x] `linear_solver.py` の互換ラッパー化
+
+**実装メモ（2026-02-03）**:
+
+- `EquationSystem` を可変次元化し、`A/B/C/D` を14x14/14x6で構築
+- `NewKeynesianModel` を縮約形から構造解へ移行
+- `MRS` / `Resource Constraint` を追加し、賃金NKPCは `mrs_t` 参照へ統一
+- `Q,S` は係数一致の連立方程式から算出（近似式を廃止）
 
 **解法の核心コード（擬似コード）**:
 
@@ -418,4 +427,4 @@ def test_numerical_stability():
 
 ---
 
-*最終更新: 2026-02-01*
+*最終更新: 2026-02-03*

@@ -11,57 +11,24 @@ import numpy as np
 
 from japan_fiscal_simulator.core.equations.base import EquationCoefficients
 
-
-@dataclass(frozen=True)
-class VariableIndices:
-    """変数のインデックスマッピング"""
-
-    # 状態変数（先決変数）
-    g: int = 0  # 政府支出
-    a: int = 1  # 技術
-    k: int = 2  # 資本
-    i: int = 3  # 投資
-
-    # 制御変数（ジャンプ変数）
-    y: int = 4  # 産出
-    pi: int = 5  # インフレ
-    r: int = 6  # 金利
-    q: int = 7  # Tobin's Q
-    rk: int = 8  # 資本収益率
-
-    @property
-    def n_state(self) -> int:
-        return 4
-
-    @property
-    def n_control(self) -> int:
-        return 5
-
-    @property
-    def n_total(self) -> int:
-        return 9
+DEFAULT_STATE_VARS: tuple[str, ...] = ("g", "a", "k", "i", "w")
+DEFAULT_CONTROL_VARS: tuple[str, ...] = (
+    "y",
+    "pi",
+    "r",
+    "q",
+    "rk",
+    "n",
+    "c",
+    "mc",
+    "mrs",
+)
+DEFAULT_SHOCKS: tuple[str, ...] = ("e_g", "e_a", "e_m", "e_i", "e_w", "e_p")
 
 
 @dataclass(frozen=True)
-class ShockIndices:
-    """ショックのインデックスマッピング"""
-
-    e_g: int = 0  # 政府支出ショック
-    e_a: int = 1  # 技術ショック
-    e_m: int = 2  # 金融政策ショック
-    e_i: int = 3  # 投資固有技術ショック
-
-    @property
-    def n_shocks(self) -> int:
-        return 4
-
-
-@dataclass
 class SystemMatrices:
-    """システム行列
-
-    モデル形式: A @ E[y_{t+1}] + B @ y_t + C @ y_{t-1} + D @ ε_t = 0
-    """
+    """システム行列"""
 
     A: np.ndarray  # E[y_{t+1}] の係数 (n x n)
     B: np.ndarray  # y_t の係数 (n x n)
@@ -72,21 +39,42 @@ class SystemMatrices:
 class EquationSystem:
     """方程式からシステム行列を構築するクラス"""
 
-    def __init__(self) -> None:
-        self.var_idx = VariableIndices()
-        self.shock_idx = ShockIndices()
+    def __init__(
+        self,
+        state_vars: tuple[str, ...] = DEFAULT_STATE_VARS,
+        control_vars: tuple[str, ...] = DEFAULT_CONTROL_VARS,
+        shocks: tuple[str, ...] = DEFAULT_SHOCKS,
+    ) -> None:
+        self.state_vars = state_vars
+        self.control_vars = control_vars
+        self.var_order = state_vars + control_vars
+        self.shocks = shocks
+        self.var_index = {name: i for i, name in enumerate(self.var_order)}
+        self.shock_index = {name: i for i, name in enumerate(self.shocks)}
+
+    @property
+    def n_state(self) -> int:
+        return len(self.state_vars)
+
+    @property
+    def n_control(self) -> int:
+        return len(self.control_vars)
+
+    @property
+    def n_total(self) -> int:
+        return len(self.var_order)
+
+    @property
+    def n_shocks(self) -> int:
+        return len(self.shocks)
 
     def build_matrices(self, equations: list[EquationCoefficients]) -> SystemMatrices:
-        """方程式リストからシステム行列を構築
+        """方程式リストからシステム行列を構築"""
+        n = self.n_total
+        m = self.n_shocks
 
-        Args:
-            equations: 方程式の係数リスト（順序: g, a, IS, Phillips, Taylor）
-
-        Returns:
-            SystemMatrices
-        """
-        n = self.var_idx.n_total
-        m = self.shock_idx.n_shocks
+        if len(equations) != n:
+            raise ValueError(f"方程式数({len(equations)})と変数数({n})が一致しません")
 
         A = np.zeros((n, n))
         B = np.zeros((n, n))
@@ -107,45 +95,12 @@ class EquationSystem:
         row: int,
         eq: EquationCoefficients,
     ) -> None:
-        """1つの方程式の係数を行列に書き込む"""
-        idx = self.var_idx
-        sidx = self.shock_idx
+        for var in self.var_order:
+            col = self.var_index[var]
+            A[row, col] = getattr(eq, f"{var}_forward", 0.0)
+            B[row, col] = getattr(eq, f"{var}_current", 0.0)
+            C[row, col] = getattr(eq, f"{var}_lag", 0.0)
 
-        # 期待値（t+1期）→ A行列
-        A[row, idx.y] = eq.y_forward
-        A[row, idx.pi] = eq.pi_forward
-        A[row, idx.r] = eq.r_forward
-        A[row, idx.g] = eq.g_forward
-        A[row, idx.a] = eq.a_forward
-        A[row, idx.k] = eq.k_forward
-        A[row, idx.i] = eq.i_forward
-        A[row, idx.q] = eq.q_forward
-        A[row, idx.rk] = eq.rk_forward
-
-        # 当期（t期）→ B行列
-        B[row, idx.y] = eq.y_current
-        B[row, idx.pi] = eq.pi_current
-        B[row, idx.r] = eq.r_current
-        B[row, idx.g] = eq.g_current
-        B[row, idx.a] = eq.a_current
-        B[row, idx.k] = eq.k_current
-        B[row, idx.i] = eq.i_current
-        B[row, idx.q] = eq.q_current
-        B[row, idx.rk] = eq.rk_current
-
-        # 前期（t-1期）→ C行列
-        C[row, idx.y] = eq.y_lag
-        C[row, idx.pi] = eq.pi_lag
-        C[row, idx.r] = eq.r_lag
-        C[row, idx.g] = eq.g_lag
-        C[row, idx.a] = eq.a_lag
-        C[row, idx.k] = eq.k_lag
-        C[row, idx.i] = eq.i_lag
-        C[row, idx.q] = eq.q_lag
-        C[row, idx.rk] = eq.rk_lag
-
-        # ショック → D行列
-        D[row, sidx.e_g] = eq.e_g
-        D[row, sidx.e_a] = eq.e_a
-        D[row, sidx.e_m] = eq.e_m
-        D[row, sidx.e_i] = eq.e_i
+        for shock in self.shocks:
+            col = self.shock_index[shock]
+            D[row, col] = getattr(eq, shock, 0.0)

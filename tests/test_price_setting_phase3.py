@@ -1,5 +1,6 @@
 """Phase 3: 価格設定ブロックのテスト"""
 
+import numpy as np
 import pytest
 
 from japan_fiscal_simulator.core.equations.marginal_cost import (
@@ -11,8 +12,13 @@ from japan_fiscal_simulator.core.equations.phillips_curve import (
     PhillipsCurveParameters,
 )
 from japan_fiscal_simulator.core.model import DSGEModel
+from japan_fiscal_simulator.core.nk_model import NewKeynesianModel
 from japan_fiscal_simulator.core.simulation import ImpulseResponseSimulator
-from japan_fiscal_simulator.parameters.defaults import DefaultParameters, FirmParameters, ShockParameters
+from japan_fiscal_simulator.parameters.defaults import (
+    DefaultParameters,
+    FirmParameters,
+    ShockParameters,
+)
 
 
 class TestIndexedPhillipsCurve:
@@ -73,3 +79,32 @@ class TestPhase3Parameters:
         pi_alt = ImpulseResponseSimulator(model_alt).simulate("e_p", shock_size=0.01, periods=1)
 
         assert pi_base.get_response("pi")[0] == pytest.approx(pi_alt.get_response("pi")[0])
+
+    def test_price_markup_persistence_updates_state_equation(self) -> None:
+        params = DefaultParameters()
+        model = NewKeynesianModel(params)
+        sol = model.solution
+
+        size = 0.01
+        irf = model.impulse_response("e_p", size=size, periods=1)
+
+        # state[t=0]
+        s0 = np.array([irf[var][0] for var in model.vars.state_vars])
+        # state[t=1]
+        s1 = np.array([irf[var][1] for var in model.vars.state_vars])
+
+        shock_idx = model.vars.shock_index("e_p")
+        expected_s1 = sol.P @ s0 + sol.Q[:, shock_idx] * (size * (params.shocks.rho_p**1))
+        np.testing.assert_allclose(s1, expected_s1, atol=1e-10, rtol=1e-8)
+
+    def test_price_markup_rho_p_affects_initial_inflation(self) -> None:
+        low_rho = DefaultParameters(shocks=ShockParameters(rho_p=0.0))
+        high_rho = DefaultParameters(shocks=ShockParameters(rho_p=0.9))
+
+        low_model = NewKeynesianModel(low_rho)
+        high_model = NewKeynesianModel(high_rho)
+
+        low_pi0 = low_model.impulse_response("e_p", size=0.01, periods=0)["pi"][0]
+        high_pi0 = high_model.impulse_response("e_p", size=0.01, periods=0)["pi"][0]
+
+        assert high_pi0 != pytest.approx(low_pi0)

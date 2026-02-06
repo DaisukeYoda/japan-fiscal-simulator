@@ -28,10 +28,18 @@ from japan_fiscal_simulator.core.equations.marginal_cost import (
     MarginalCostEquation,
     MarginalCostParameters,
 )
+from japan_fiscal_simulator.core.equations.mrs import (
+    MRSEquation,
+    MRSEquationParameters,
+)
 from japan_fiscal_simulator.core.equations.phillips_curve import (
     PhillipsCurve,
     PhillipsCurveParameters,
     compute_phillips_slope,
+)
+from japan_fiscal_simulator.core.equations.resource_constraint import (
+    ResourceConstraint,
+    ResourceConstraintParameters,
 )
 from japan_fiscal_simulator.core.equations.taylor_rule import (
     TaylorRule,
@@ -59,8 +67,12 @@ __all__ = [
     "LaborDemandParameters",
     "MarginalCostEquation",
     "MarginalCostParameters",
+    "MRSEquation",
+    "MRSEquationParameters",
     "PhillipsCurve",
     "PhillipsCurveParameters",
+    "ResourceConstraint",
+    "ResourceConstraintParameters",
     "TaylorRule",
     "TaylorRuleParameters",
     "TechnologyProcess",

@@ -121,6 +121,14 @@ class ShockParameters:
     sigma_w: float = 0.01  # 賃金マークアップショック
     sigma_p: float = 0.01  # 価格マークアップショック
 
+    @property
+    def persistent_non_state_shocks(self) -> dict[str, float]:
+        """状態変数を持たないがIRF上でAR(1)持続性を持つショック"""
+        return {
+            "e_p": self.rho_p,
+            "e_w": self.rho_w,
+        }
+
 
 @dataclass
 class DefaultParameters:

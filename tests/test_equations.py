@@ -11,10 +11,10 @@ from japan_fiscal_simulator.core.equations import (
     CapitalAccumulationParameters,
     CapitalRentalRateEquation,
     GovernmentSpendingProcess,
-    ISCurve,
-    ISCurveParameters,
     InvestmentAdjustmentEquation,
     InvestmentAdjustmentParameters,
+    ISCurve,
+    ISCurveParameters,
     LaborDemand,
     LaborDemandParameters,
     MarginalCostEquation,
@@ -36,7 +36,6 @@ from japan_fiscal_simulator.core.equations import (
     compute_phillips_slope,
     compute_wage_adjustment_speed,
 )
-
 
 # ---------------------------------------------------------------------------
 # IS Curve

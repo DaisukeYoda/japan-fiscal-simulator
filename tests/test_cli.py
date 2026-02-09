@@ -8,7 +8,7 @@ try:
     from japan_fiscal_simulator.output.schemas import VariableTimeSeries  # noqa: F401
 
     _pydantic_ok = True
-except Exception:
+except (ImportError, TypeError, AssertionError):
     _pydantic_ok = False
 
 pytestmark = pytest.mark.skipif(not _pydantic_ok, reason="pydantic incompatible with this Python version")

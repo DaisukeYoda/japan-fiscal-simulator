@@ -9,7 +9,7 @@ from japan_fiscal_simulator.core.exceptions import (
     ShockValidationError,
     ValidationError,
 )
-from japan_fiscal_simulator.core.model import DSGEModel, VARIABLE_INDICES
+from japan_fiscal_simulator.core.model import VARIABLE_INDICES, DSGEModel
 from japan_fiscal_simulator.core.simulation import ImpulseResponseSimulator
 from japan_fiscal_simulator.parameters.calibration import JapanCalibration
 from japan_fiscal_simulator.parameters.defaults import (

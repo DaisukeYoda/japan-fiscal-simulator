@@ -1,15 +1,13 @@
 """EquationSystemの行列構築テスト"""
 
+from dataclasses import FrozenInstanceError
+
 import numpy as np
 import pytest
-from dataclasses import FrozenInstanceError
 
 from japan_fiscal_simulator.core.equation_system import (
     EquationSystem,
     SystemMatrices,
-    DEFAULT_STATE_VARS,
-    DEFAULT_CONTROL_VARS,
-    DEFAULT_SHOCKS,
 )
 from japan_fiscal_simulator.core.equations.base import EquationCoefficients
 

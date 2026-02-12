@@ -9,6 +9,8 @@ from rich.console import Console
 
 from japan_fiscal_simulator import __version__
 from japan_fiscal_simulator.cli.commands import (
+    estimate_command,
+    fetch_data_command,
     multiplier_command,
     parameters_command,
     report_command,
@@ -101,6 +103,79 @@ def report(
 ) -> None:
     """レポートを生成"""
     report_command(output_file)
+
+
+@app.command("estimate")
+def estimate(
+    data_file: Annotated[
+        Path | None,
+        typer.Argument(help="観測データCSVファイル"),
+    ] = None,
+    draws: Annotated[
+        int,
+        typer.Option("--draws", "-d", help="MCMCドロー数"),
+    ] = 100_000,
+    chains: Annotated[
+        int,
+        typer.Option("--chains", help="チェーン数"),
+    ] = 4,
+    burnin: Annotated[
+        int,
+        typer.Option("--burnin", help="バーンイン数"),
+    ] = 50_000,
+    thinning: Annotated[
+        int,
+        typer.Option("--thinning", help="間引き間隔"),
+    ] = 10,
+    output_dir: Annotated[
+        Path | None,
+        typer.Option("--output", "-o", help="結果出力ディレクトリ"),
+    ] = None,
+    synthetic: Annotated[
+        bool,
+        typer.Option("--synthetic", help="合成データを使用"),
+    ] = False,
+    synthetic_periods: Annotated[
+        int,
+        typer.Option("--synthetic-periods", help="合成データの期間数"),
+    ] = 200,
+) -> None:
+    """ベイズ推定（Metropolis-Hastings MCMC）を実行
+
+    例:
+        jpfs estimate data.csv --draws 100000 --chains 4 --output results/
+        jpfs estimate --synthetic --draws 1000 --burnin 500 --chains 2
+    """
+    estimate_command(
+        data_file,
+        draws,
+        chains,
+        burnin,
+        thinning,
+        output_dir,
+        synthetic,
+        synthetic_periods,
+    )
+
+
+@app.command("fetch-data")
+def fetch_data(
+    output_file: Annotated[
+        Path,
+        typer.Option("--output", "-o", help="出力CSVファイルパス"),
+    ] = Path("data/japan_quarterly.csv"),
+    periods: Annotated[
+        int,
+        typer.Option("--periods", "-p", help="生成期間数（合成データ）"),
+    ] = 200,
+) -> None:
+    """合成データを生成してCSV出力
+
+    例:
+        jpfs fetch-data --output data/japan_quarterly.csv
+        jpfs fetch-data --periods 100 -o data/test_data.csv
+    """
+    fetch_data_command(output_file, periods)
 
 
 @app.command("mcp")

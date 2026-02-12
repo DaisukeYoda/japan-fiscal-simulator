@@ -5,6 +5,7 @@ from functools import wraps
 from pathlib import Path
 from typing import Annotated, Protocol
 
+import numpy as np
 import typer
 from rich.console import Console
 from rich.panel import Panel
@@ -17,10 +18,21 @@ from japan_fiscal_simulator.core.simulation import (
     FiscalMultiplierCalculator,
     ImpulseResponseSimulator,
 )
+from japan_fiscal_simulator.estimation.data_fetcher import SyntheticDataGenerator
+from japan_fiscal_simulator.estimation.data_loader import DataLoader
+from japan_fiscal_simulator.estimation.mcmc import (
+    MCMCConfig,
+    MetropolisHastings,
+    make_log_posterior,
+)
+from japan_fiscal_simulator.estimation.parameter_mapping import ParameterMapping
+from japan_fiscal_simulator.estimation.priors import PriorConfig
+from japan_fiscal_simulator.estimation.results import build_estimation_result
 from japan_fiscal_simulator.mcp.tools import ContextManager
 from japan_fiscal_simulator.output.graphs import GraphGenerator
 from japan_fiscal_simulator.output.reports import ReportGenerator
 from japan_fiscal_simulator.parameters.calibration import JapanCalibration
+from japan_fiscal_simulator.parameters.defaults import DefaultParameters
 
 console = Console()
 
@@ -375,3 +387,185 @@ def report_command(
         console.print(f"[green]レポートを保存しました: {output_file}[/green]")
     else:
         console.print(report)
+
+
+@handle_jpfs_error
+def estimate_command(
+    data_file: Annotated[
+        Path | None,
+        typer.Argument(help="観測データCSVファイル"),
+    ] = None,
+    draws: Annotated[
+        int,
+        typer.Option("--draws", "-d", help="MCMCドロー数"),
+    ] = 100_000,
+    chains: Annotated[
+        int,
+        typer.Option("--chains", help="チェーン数"),
+    ] = 4,
+    burnin: Annotated[
+        int,
+        typer.Option("--burnin", help="バーンイン数"),
+    ] = 50_000,
+    thinning: Annotated[
+        int,
+        typer.Option("--thinning", help="間引き間隔"),
+    ] = 10,
+    output_dir: Annotated[
+        Path | None,
+        typer.Option("--output", "-o", help="結果出力ディレクトリ"),
+    ] = None,
+    synthetic: Annotated[
+        bool,
+        typer.Option("--synthetic", help="合成データを使用"),
+    ] = False,
+    synthetic_periods: Annotated[
+        int,
+        typer.Option("--synthetic-periods", help="合成データの期間数"),
+    ] = 200,
+) -> None:
+    """ベイズ推定（Metropolis-Hastings MCMC）を実行
+
+    例:
+        jpfs estimate data.csv --draws 100000 --chains 4 --output results/
+        jpfs estimate --synthetic --draws 1000 --burnin 500 --chains 2
+    """
+    mapping = ParameterMapping()
+    prior_config = PriorConfig.smets_wouters_japan()
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+    ) as progress:
+        # データ読み込み
+        task = progress.add_task("データを読み込み中...", total=None)
+
+        if synthetic:
+            gen = SyntheticDataGenerator()
+            params = DefaultParameters()
+            rng = np.random.default_rng(42)
+            est_data = gen.generate(params, n_periods=synthetic_periods, rng=rng)
+            data_y = est_data.data
+            console.print(f"[cyan]合成データを生成: {synthetic_periods}期間[/cyan]")
+        elif data_file is not None:
+            loader = DataLoader()
+            est_data = loader.load_csv(data_file)
+            data_y = est_data.data
+            console.print(
+                f"[cyan]データ読み込み完了: {data_file} ({est_data.n_periods}期間)[/cyan]"
+            )
+        else:
+            console.print("[red]データファイルまたは --synthetic を指定してください[/red]")
+            raise typer.Exit(1)
+
+        progress.update(task, description="事後確率関数を構築中...")
+
+        log_post = make_log_posterior(mapping, prior_config, data_y)
+        theta0 = mapping.defaults()
+
+        cfg = MCMCConfig(
+            n_chains=chains,
+            n_draws=draws,
+            n_burnin=burnin,
+            thinning=thinning,
+        )
+
+        progress.update(task, description="MCMC推定を実行中...")
+        console.print(
+            f"[cyan]MCMC設定: chains={chains}, draws={draws}, burnin={burnin}, thinning={thinning}[/cyan]"
+        )
+
+        mh = MetropolisHastings(
+            log_posterior_fn=log_post,
+            n_params=mapping.n_params,
+            config=cfg,
+            parameter_names=mapping.names,
+            bounds=mapping.bounds(),
+        )
+
+        mcmc_result = mh.run(theta0=theta0)
+
+        progress.update(task, description="結果を集計中...")
+
+        result = build_estimation_result(
+            chains=mcmc_result.chains,
+            acceptance_rates=mcmc_result.acceptance_rates,
+            mode=mcmc_result.mode,
+            mode_log_posterior=mcmc_result.mode_log_posterior,
+            hessian=mcmc_result.mode_hessian,
+            prior_config=prior_config,
+            mapping=mapping,
+            n_burnin=burnin,
+        )
+
+    # 結果表示
+    console.print()
+    console.print(
+        Panel(
+            f"[bold]ベイズ推定結果[/bold]\n"
+            f"チェーン数: {chains}\n"
+            f"ドロー数: {draws}\n"
+            f"収束判定: {'[green]OK[/green]' if result.diagnostics.converged else '[red]NG[/red]'}\n"
+            f"対数周辺尤度: {result.log_marginal_likelihood:.2f}",
+            title="Bayesian Estimation",
+        )
+    )
+
+    # 受容率
+    acc_table = Table(title="採択率")
+    acc_table.add_column("チェーン", style="cyan")
+    acc_table.add_column("採択率", style="green")
+    for i, rate in enumerate(result.diagnostics.acceptance_rates):
+        acc_table.add_row(f"Chain {i}", f"{rate:.3f}")
+    console.print(acc_table)
+
+    # パラメータサマリー
+    console.print()
+    console.print(result.summary_table())
+
+    # 結果保存
+    if output_dir is not None:
+        output_dir.mkdir(parents=True, exist_ok=True)
+        np.save(output_dir / "posterior_samples.npy", result.posterior_samples)
+        np.save(output_dir / "mode.npy", result.mode)
+        summary_path = output_dir / "summary.txt"
+        summary_path.write_text(result.summary_table(), encoding="utf-8")
+        console.print(f"\n[green]結果を保存しました: {output_dir}[/green]")
+
+
+@handle_jpfs_error
+def fetch_data_command(
+    output_file: Annotated[
+        Path,
+        typer.Option("--output", "-o", help="出力CSVファイルパス"),
+    ] = Path("data/japan_quarterly.csv"),
+    periods: Annotated[
+        int,
+        typer.Option("--periods", "-p", help="生成期間数（合成データ）"),
+    ] = 200,
+) -> None:
+    """合成データを生成してCSV出力
+
+    例:
+        jpfs fetch-data --output data/japan_quarterly.csv
+        jpfs fetch-data --periods 100 -o data/test_data.csv
+    """
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+    ) as progress:
+        progress.add_task("合成データを生成中...", total=None)
+
+        gen = SyntheticDataGenerator()
+        params = DefaultParameters()
+        rng = np.random.default_rng(42)
+        est_data = gen.generate(params, n_periods=periods, rng=rng)
+
+    output_file.parent.mkdir(parents=True, exist_ok=True)
+    gen.to_csv(est_data, output_file)
+
+    console.print(f"[green]データを保存しました: {output_file}[/green]")
+    console.print(f"期間数: {periods}")
+    console.print(f"観測変数: {', '.join(est_data.variable_names)}")

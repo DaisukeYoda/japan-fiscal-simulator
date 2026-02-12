@@ -59,3 +59,27 @@ class ShockValidationError(ValidationError):
     """ショック指定が無効なエラー"""
 
     pass
+
+
+class EstimationError(JPFSError):
+    """推定関連のエラー"""
+
+    pass
+
+
+class KalmanFilterError(EstimationError):
+    """Kalmanフィルタ計算エラー"""
+
+    pass
+
+
+class MCMCConvergenceError(EstimationError):
+    """MCMC収束エラー"""
+
+    pass
+
+
+class DataValidationError(EstimationError):
+    """データ検証エラー"""
+
+    pass

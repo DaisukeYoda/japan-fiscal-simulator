@@ -4,12 +4,23 @@ import time
 from datetime import datetime
 from typing import Any
 
+import numpy as np
+
 from japan_fiscal_simulator.core.exceptions import ShockValidationError
 from japan_fiscal_simulator.core.model import DSGEModel
 from japan_fiscal_simulator.core.simulation import (
     FiscalMultiplierCalculator,
     ImpulseResponseSimulator,
 )
+from japan_fiscal_simulator.estimation.data_fetcher import SyntheticDataGenerator
+from japan_fiscal_simulator.estimation.mcmc import (
+    MCMCConfig,
+    MetropolisHastings,
+    make_log_posterior,
+)
+from japan_fiscal_simulator.estimation.parameter_mapping import ParameterMapping
+from japan_fiscal_simulator.estimation.priors import PriorConfig
+from japan_fiscal_simulator.estimation.results import build_estimation_result
 from japan_fiscal_simulator.output.reports import ReportGenerator
 from japan_fiscal_simulator.output.schemas import (
     ComparisonResult,
@@ -25,6 +36,7 @@ from japan_fiscal_simulator.output.schemas import (
     VariableTimeSeries,
 )
 from japan_fiscal_simulator.parameters.calibration import JapanCalibration
+from japan_fiscal_simulator.parameters.defaults import DefaultParameters
 
 
 class SimulationContext:
@@ -116,8 +128,7 @@ def simulate_policy(
     shock_name = shock_mapping.get(policy_type)
     if shock_name is None:
         raise ShockValidationError(
-            f"無効な政策タイプです: '{policy_type}'。"
-            f"有効な値: {list(shock_mapping.keys())}"
+            f"無効な政策タイプです: '{policy_type}'。有効な値: {list(shock_mapping.keys())}"
         )
 
     # シミュレーション実行
@@ -424,3 +435,93 @@ def generate_report(
         "scenario": ctx.latest_result.scenario.name,
         "generated_at": datetime.now().isoformat(),
     }
+
+
+def run_estimation(
+    n_draws: int = 100_000,
+    n_chains: int = 4,
+    n_burnin: int = 50_000,
+    thinning: int = 10,
+    synthetic_periods: int = 200,
+) -> dict[str, Any]:
+    """ベイズ推定（Metropolis-Hastings MCMC）を実行
+
+    合成データを使用してDSGEモデルのパラメータを推定する。
+
+    Args:
+        n_draws: MCMCドロー数
+        n_chains: チェーン数
+        n_burnin: バーンイン数
+        thinning: 間引き間隔
+        synthetic_periods: 合成データの期間数
+
+    Returns:
+        推定結果のサマリー
+    """
+    mapping = ParameterMapping()
+    prior_config = PriorConfig.smets_wouters_japan()
+    params = DefaultParameters()
+
+    gen = SyntheticDataGenerator()
+    rng = np.random.default_rng(42)
+    est_data = gen.generate(params, n_periods=synthetic_periods, rng=rng)
+
+    log_post = make_log_posterior(mapping, prior_config, est_data.data)
+    theta0 = mapping.defaults()
+
+    cfg = MCMCConfig(
+        n_chains=n_chains,
+        n_draws=n_draws,
+        n_burnin=n_burnin,
+        thinning=thinning,
+    )
+
+    mh = MetropolisHastings(
+        log_posterior_fn=log_post,
+        n_params=mapping.n_params,
+        config=cfg,
+        parameter_names=mapping.names,
+        bounds=mapping.bounds(),
+    )
+
+    mcmc_result = mh.run(theta0=theta0)
+
+    result = build_estimation_result(
+        chains=mcmc_result.chains,
+        acceptance_rates=mcmc_result.acceptance_rates,
+        mode=mcmc_result.mode,
+        mode_log_posterior=mcmc_result.mode_log_posterior,
+        hessian=mcmc_result.mode_hessian,
+        prior_config=prior_config,
+        mapping=mapping,
+        n_burnin=n_burnin,
+    )
+
+    return {
+        "converged": result.diagnostics.converged,
+        "log_marginal_likelihood": result.log_marginal_likelihood,
+        "n_chains": n_chains,
+        "n_draws": n_draws,
+        "acceptance_rates": result.diagnostics.acceptance_rates.tolist(),
+        "summary_table": result.summary_table(),
+        "parameter_summaries": [
+            {
+                "name": s.name,
+                "posterior_mean": s.mean,
+                "posterior_std": s.std,
+                "hpd_90_lower": s.hpd_lower,
+                "hpd_90_upper": s.hpd_upper,
+                "prior_mean": s.prior_mean,
+            }
+            for s in result.summaries
+        ],
+    }
+
+
+def get_posterior_summary() -> dict[str, Any]:
+    """最新の推定結果のサマリーを取得
+
+    Returns:
+        推定結果のサマリー（まだ推定が実行されていない場合はエラー）
+    """
+    return {"error": "推定結果がありません。先にrun_estimationを実行してください。"}

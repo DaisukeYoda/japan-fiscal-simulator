@@ -61,10 +61,7 @@ class ParameterMapping:
         # --- ショック持続性 ---
         ParameterSpec("rho_a", "shocks", "rho_a", 0.90, 0.01, 0.99),
         ParameterSpec("rho_g", "shocks", "rho_g", 0.90, 0.01, 0.99),
-        ParameterSpec("rho_i", "shocks", "rho_i", 0.70, 0.01, 0.99),
-        ParameterSpec("rho_w", "shocks", "rho_w", 0.90, 0.01, 0.99),
         ParameterSpec("rho_p", "shocks", "rho_p", 0.90, 0.01, 0.99),
-        ParameterSpec("rho_m", "shocks", "rho_m", 0.50, 0.01, 0.99),
         # --- ショック標準偏差 ---
         ParameterSpec("sigma_a", "shocks", "sigma_a", 0.01, 0.001, 0.1),
         ParameterSpec("sigma_g", "shocks", "sigma_g", 0.01, 0.001, 0.1),

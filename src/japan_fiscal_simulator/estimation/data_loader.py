@@ -33,7 +33,7 @@ DEFAULT_OBSERVABLES: list[ObservableDefinition] = [
     ObservableDefinition("output_growth", "実質GDP成長率", "dlog", "y"),
     ObservableDefinition("consumption_growth", "消費成長率", "dlog", "c"),
     ObservableDefinition("investment_growth", "投資成長率", "dlog", "i"),
-    ObservableDefinition("inflation", "インフレ率", "dlog", "pi"),
+    ObservableDefinition("inflation", "インフレ率", "level", "pi"),
     ObservableDefinition("wage_growth", "実質賃金成長率", "dlog", "w"),
     ObservableDefinition("hours", "労働時間", "level", "n"),
     ObservableDefinition("interest_rate", "名目金利", "rate", "r"),

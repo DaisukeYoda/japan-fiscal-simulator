@@ -197,8 +197,8 @@ class TestPriorConfig:
     def test_smets_wouters_japan_parameter_count(self) -> None:
         """SW日本版事前分布のパラメータ数が正しい"""
         config = PriorConfig.smets_wouters_japan()
-        # 構造8 + 金融政策2 + rho_r 1 + ショック持続性6 + ショックσ6 + 観測誤差7 = 30
-        assert config.n_params == 30
+        # 構造8 + 金融政策2 + rho_r 1 + ショック持続性3 + ショックσ6 + 観測誤差7 = 27
+        assert config.n_params == 27
 
     def test_smets_wouters_japan_names(self) -> None:
         """SW日本版事前分布のパラメータ名が正しい"""
@@ -220,10 +220,7 @@ class TestPriorConfig:
         # ショック持続性
         assert "rho_a" in names
         assert "rho_g" in names
-        assert "rho_i" in names
-        assert "rho_w" in names
         assert "rho_p" in names
-        assert "rho_m" in names
         # ショック標準偏差
         assert "sigma_a" in names
         assert "sigma_m" in names

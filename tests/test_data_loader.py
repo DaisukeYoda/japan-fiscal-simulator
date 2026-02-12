@@ -151,8 +151,38 @@ class TestCSVRoundTrip:
             # 内容を読み込んで確認
             text = csv_path.read_text(encoding="utf-8")
             lines = text.strip().split("\n")
-            # ヘッダー + n_periods行
-            assert len(lines) == synth.n_periods + 1
+            # ヘッダー + (n_periods+1)行（dlog復元で1期多い）
+            assert len(lines) == synth.n_periods + 2
+
+    def test_csv_round_trip_through_loader(self) -> None:
+        """to_csv → DataLoader.load_csv のラウンドトリップでスケール一致"""
+        params = DefaultParameters()
+        gen = SyntheticDataGenerator()
+        rng = np.random.default_rng(42)
+        synth = gen.generate(params, n_periods=50, rng=rng)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            csv_path = Path(tmpdir) / "round_trip.csv"
+            gen.to_csv(synth, csv_path)
+
+            # DataLoaderで再読み込み
+            loaded = EstimationData.from_csv(csv_path)
+
+            assert loaded.n_obs == 7
+            assert loaded.n_periods == synth.n_periods
+            assert np.all(np.isfinite(loaded.data))
+
+            # dlog変数のスケールが一致することを確認（demean前 vs demean後の差を許容）
+            # loaded.data は demean 済みなので、元データも demean して比較
+            synth_demeaned = DataLoader.demean(synth.data)
+            for j in range(loaded.n_obs):
+                std_loaded = np.std(loaded.data[:, j])
+                std_orig = np.std(synth_demeaned[:, j])
+                if std_orig > 1e-10:
+                    ratio = std_loaded / std_orig
+                    assert 0.95 < ratio < 1.05, (
+                        f"変数{j}: std比={ratio:.2f} (期待: ~1.0)"
+                    )
 
     def test_csv_header(self) -> None:
         """CSVヘッダーが正しいことを確認"""
@@ -167,7 +197,8 @@ class TestCSVRoundTrip:
 
             text = csv_path.read_text(encoding="utf-8")
             header = text.strip().split("\n")[0]
-            expected_cols = ["date"] + synth.variable_names
+            # DataLoader互換のカラム名で出力される
+            expected_cols = ["date", "gdp", "consumption", "investment", "deflator", "wage", "employment", "rate"]
             assert header == ",".join(expected_cols)
 
 
@@ -274,8 +305,7 @@ class TestEstimationData:
         assert len(ed.dates) == ed.n_periods
 
     def test_from_csv_classmethod(self) -> None:
-        """from_csv クラスメソッドが動作することを確認"""
-        # 最小限のCSVを作成してテスト
+        """from_csv → DataLoader.load_csv でエラーなく読み込めることを確認"""
         params = DefaultParameters()
         gen = SyntheticDataGenerator()
         rng = np.random.default_rng(42)
@@ -285,10 +315,12 @@ class TestEstimationData:
             csv_path = Path(tmpdir) / "test.csv"
             gen.to_csv(synth, csv_path)
 
-            # from_csvはDataLoaderの標準CSVフォーマット（水準値）を期待するため
-            # ここではSyntheticDataGeneratorのCSVフォーマット（変換済み）とは異なる
-            # CSVが読み込めること自体を確認（フォーマットの違いでエラーになりうる）
-            assert csv_path.exists()
+            # to_csv は DataLoader 互換フォーマットで書き出すため
+            # from_csv で正常に読み込める
+            loaded = EstimationData.from_csv(csv_path)
+            assert loaded.n_obs == 7
+            assert loaded.n_periods == synth.n_periods
+            assert np.all(np.isfinite(loaded.data))
 
 
 class TestObservableDefinition:
@@ -304,7 +336,7 @@ class TestObservableDefinition:
         assert transforms["output_growth"] == "dlog"
         assert transforms["consumption_growth"] == "dlog"
         assert transforms["investment_growth"] == "dlog"
-        assert transforms["inflation"] == "dlog"
+        assert transforms["inflation"] == "level"
         assert transforms["wage_growth"] == "dlog"
         assert transforms["hours"] == "level"
         assert transforms["interest_rate"] == "rate"

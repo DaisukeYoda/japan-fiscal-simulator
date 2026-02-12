@@ -11,6 +11,7 @@ import numpy as np
 from japan_fiscal_simulator.core.nk_model import ModelVariables, NewKeynesianModel
 from japan_fiscal_simulator.estimation.data_loader import (
     DEFAULT_OBSERVABLES,
+    DataLoader,
     EstimationData,
     ObservableDefinition,
 )
@@ -113,18 +114,63 @@ class SyntheticDataGenerator:
         )
 
     def to_csv(self, data: EstimationData, path: str | Path) -> None:
-        """EstimationDataをCSVファイルに出力する
+        """EstimationDataをDataLoader.load_csv互換のCSVファイルに出力する
+
+        変換済みデータを水準値に復元し、DataLoader.load_csv が再読込・再変換
+        できるフォーマットで書き出す。
+
+        - dlog変数: cumsum + exp で正の水準値に復元（DataLoaderが 100*diff(log()) を適用可能）
+        - level/rate変数: 先頭に1期追加して元の長さに戻す
+        - カラム名: DataLoader._COLUMN_MAP 互換（gdp, consumption, ...）
+        - 行数: n_periods + 1（dlog変換で1期短くなるため）
 
         Args:
             data: 推定用データ
             path: 出力先ファイルパス
         """
         filepath = Path(path)
-        header = "date," + ",".join(data.variable_names)
+        csv_col_names = [
+            DataLoader._COLUMN_MAP.get(name, name) for name in data.variable_names
+        ]
+
+        has_dlog = any(obs.transform == "dlog" for obs in self.observables)
+
+        if has_dlog:
+            # dlog変換で1期短くなるため、水準値に復元して n_periods+1 行を書き出す
+            n_raw = data.n_periods + 1
+            raw_data = np.zeros((n_raw, data.n_obs))
+
+            for j, obs in enumerate(self.observables):
+                col = data.data[:, j]
+                if obs.transform == "dlog":
+                    # DataLoader は 100*diff(log(level)) を適用するため、
+                    # 100*diff(log(base*exp(cumsum(col/100)))) = 100*(col/100) = col
+                    # となるよう col/100 で累積する
+                    log_dev = np.concatenate([[0.0], np.cumsum(col / 100.0)])
+                    raw_data[:, j] = 100.0 * np.exp(log_dev)
+                elif obs.transform in ("level", "rate"):
+                    # 先頭に1期追加（最初の値を複製）
+                    raw_data[:, j] = np.concatenate([[col[0]], col])
+
+            # 日付を1四半期前から開始
+            first_date = data.dates[0]
+            year = int(first_date[:4])
+            quarter = int(first_date[-1])
+            quarter -= 1
+            if quarter < 1:
+                quarter = 4
+                year -= 1
+            dates_raw = self._generate_dates(n_raw, start_year=year, start_quarter=quarter)
+        else:
+            n_raw = data.n_periods
+            raw_data = data.data.copy()
+            dates_raw = list(data.dates)
+
+        header = "date," + ",".join(csv_col_names)
         lines = [header]
-        for t in range(data.n_periods):
-            values = ",".join(f"{data.data[t, j]:.8f}" for j in range(data.n_obs))
-            lines.append(f"{data.dates[t]},{values}")
+        for t in range(n_raw):
+            values = ",".join(f"{raw_data[t, j]:.8f}" for j in range(data.n_obs))
+            lines.append(f"{dates_raw[t]},{values}")
 
         filepath.write_text("\n".join(lines) + "\n", encoding="utf-8")
 

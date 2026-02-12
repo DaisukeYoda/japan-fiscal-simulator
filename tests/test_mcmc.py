@@ -3,6 +3,7 @@
 import numpy as np
 import pytest
 
+from japan_fiscal_simulator.core.exceptions import EstimationError
 from japan_fiscal_simulator.estimation.data_fetcher import SyntheticDataGenerator
 from japan_fiscal_simulator.estimation.mcmc import (
     MCMCConfig,
@@ -262,3 +263,25 @@ class TestMCMCWithDSGE:
         n_kept = (cfg.n_draws - cfg.n_burnin) // cfg.thinning
         assert result.chains.shape == (1, n_kept, mapping.n_params)
         assert np.isfinite(result.mode_log_posterior)
+
+
+class TestMCMCValidation:
+    """MCMC設定バリデーションのテスト"""
+
+    def test_burnin_exceeds_draws_raises(self) -> None:
+        """n_burnin >= n_draws でEstimationError"""
+        n = 2
+        log_post = _make_gaussian_log_posterior(np.zeros(n), np.eye(n))
+        cfg = MCMCConfig(n_chains=1, n_draws=100, n_burnin=100, thinning=1)
+        mh = MetropolisHastings(log_posterior_fn=log_post, n_params=n, config=cfg)
+        with pytest.raises(EstimationError, match="n_burnin"):
+            mh.run(theta0=np.zeros(n))
+
+    def test_thinning_too_large_raises(self) -> None:
+        """thinningが大きすぎてn_kept=0になる場合にEstimationError"""
+        n = 2
+        log_post = _make_gaussian_log_posterior(np.zeros(n), np.eye(n))
+        cfg = MCMCConfig(n_chains=1, n_draws=100, n_burnin=50, thinning=100)
+        mh = MetropolisHastings(log_posterior_fn=log_post, n_params=n, config=cfg)
+        with pytest.raises(EstimationError, match="n_kept=0"):
+            mh.run(theta0=np.zeros(n))

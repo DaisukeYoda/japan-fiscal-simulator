@@ -164,6 +164,22 @@ class MetropolisHastings:
             msg = "theta0を指定してください"
             raise EstimationError(msg)
 
+        cfg = self._config
+        if cfg.n_burnin >= cfg.n_draws:
+            msg = f"n_burnin({cfg.n_burnin}) >= n_draws({cfg.n_draws}): バーンイン後にサンプルが残りません"
+            raise EstimationError(msg)
+        if cfg.thinning < 1:
+            msg = f"thinning({cfg.thinning})は1以上である必要があります"
+            raise EstimationError(msg)
+
+        n_kept = (cfg.n_draws - cfg.n_burnin) // cfg.thinning
+        if n_kept < 1:
+            msg = (
+                f"n_kept=0: n_draws({cfg.n_draws}) - n_burnin({cfg.n_burnin}) = "
+                f"{cfg.n_draws - cfg.n_burnin} を thinning({cfg.thinning}) で割ると0サンプル"
+            )
+            raise EstimationError(msg)
+
         # モード探索
         mode, hessian_inv = self.find_mode(theta0)
         mode_log_post = self._log_posterior_fn(mode)
@@ -177,9 +193,6 @@ class MetropolisHastings:
         eigvals = np.linalg.eigvalsh(proposal_cov)
         if np.any(eigvals <= 0):
             proposal_cov += (abs(eigvals.min()) + 1e-8) * np.eye(self._n_params)
-
-        cfg = self._config
-        n_kept = (cfg.n_draws - cfg.n_burnin) // cfg.thinning
 
         all_chains = np.empty((cfg.n_chains, n_kept, self._n_params))
         all_log_posts = np.empty((cfg.n_chains, n_kept))

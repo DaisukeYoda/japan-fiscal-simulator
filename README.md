@@ -1,17 +1,18 @@
 # jpfs - Japan Fiscal Simulator
 
 [![PyPI version](https://badge.fury.io/py/jpfs.svg)](https://pypi.org/project/jpfs/)
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.14+](https://img.shields.io/badge/python-3.14+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-消費税減税・社会保障費増額・補助金政策などの財政政策が日本経済に与える影響をシミュレートするツール。中規模New Keynesian DSGEモデルをPythonでフルスクラッチ実装。
+消費税減税・社会保障費増額・補助金政策などの財政政策が日本経済に与える影響をシミュレートするツール。Smets-Wouters級の中規模New Keynesian DSGEモデルをPythonでフルスクラッチ実装。
 
 ## 特徴
 
-- **5部門DSGEモデル**: 家計、企業、政府、中央銀行、金融部門
-- **14方程式の構造システム**: state 5変数 + control 9変数
+- **14方程式の構造NKモデル**: 16変数（state 5 + control 9 + 財政・税ブロック）、7構造ショック
+- **5部門経済**: 家計（習慣形成）、企業（Calvo価格・賃金硬直性）、政府、中央銀行、金融部門
+- **QZ分解ベースBK/Klein解法**: `scipy.linalg.ordqz` による合理的期待均衡の一般解法
+- **ベイズ推定**: Metropolis-Hastings MCMCサンプラー + カルマンフィルタ尤度計算
 - **日本経済向けキャリブレーション**: 低金利環境、高債務水準、消費税10%
-- **QZベースBK/Klein解法**: 合理的期待均衡の一般解法
 - **MCPサーバー**: Claude Desktopとの連携
 - **CLI**: コマンドラインからのシミュレーション実行
 
@@ -91,15 +92,16 @@ Claude Desktopの設定ファイル（`claude_desktop_config.json`）に追加:
 
 ### 家計部門
 
-- 異時点間効用最大化
+- 異時点間効用最大化（消費のオイラー方程式）
 - 習慣形成（外部習慣）
-- 労働供給の内生化
+- 労働供給の内生化（限界代替率）
 
 ### 企業部門
 
-- Calvo型価格硬直性
-- CES生産関数
-- New Keynesian Phillips曲線（価格インデクセーション）
+- Calvo型価格硬直性 + 価格インデクセーション
+- Calvo型賃金硬直性 + 賃金マークアップショック
+- Cobb-Douglas生産関数、実質限界費用の明示化
+- 資本蓄積（投資調整コスト、Tobin's Q）
 
 ### 政府部門
 
@@ -117,7 +119,11 @@ Claude Desktopの設定ファイル（`claude_desktop_config.json`）に追加:
 
 - 金融加速器（BGG型簡略版）
 - 外部資金プレミアム
-- 純資産発展方程式
+- リスクプレミアムショック
+
+### 構造ショック（7種類）
+
+技術(TFP)、リスクプレミアム、投資固有技術、賃金マークアップ、価格マークアップ、政府支出、金融政策
 
 ## パラメータ
 
@@ -156,47 +162,35 @@ Claude Desktopの設定ファイル（`claude_desktop_config.json`）に追加:
 
 ## 開発
 
-### テスト実行
-
 ```bash
-pytest tests/
+# 依存関係インストール
+uv sync
+
+# テスト実行
+uv run pytest
+
+# 型チェック（strictモード）
+uv run mypy src/japan_fiscal_simulator
+
+# Lint & フォーマット
+uv run ruff check src tests
+uv run ruff format src tests
 ```
 
-### 型チェック
-
-```bash
-mypy src/japan_fiscal_simulator
-```
-
-## 今後の拡張候補
+## 今後の拡張候補（Phase 6: 日本固有の拡張）
 
 ### モデル拡張
 
-- **消費税ショックの持続性**: 現在は一時的ショックのみ。AR(1)プロセスで持続的な効果をモデル化
-- **金融加速器の本格実装**: BGG型の完全版（現在は簡略化）
 - **ZLB制約の明示的モデル化**: ゼロ金利下限での非線形ダイナミクス
+- **高債務経済**: リカーディアン/非リカーディアン家計の混合、財政持続可能性条件
+- **人口動態**: OLG要素の導入、労働力人口減少のトレンド
 - **開放経済拡張**: 為替レート、輸出入、海外金利の導入
-- **異質的家計**: 流動性制約を持つ家計（Hand-to-Mouth）の追加
-
-### 分析機能
-
-- **グラフ出力**: `--graph`オプションでMatplotlibによる可視化
-- **レポート生成**: Jinja2テンプレートによるHTML/PDFレポート
-- **感度分析**: パラメータの変化に対する結果の感応度
-- **シナリオ比較**: 複数政策シナリオの同時比較機能
-- **ベイズ推定**: 実データを用いたパラメータ推定
+- **金融加速器の本格実装**: BGG型の完全版（現在は簡略化）
 
 ### インターフェース
 
-- **MCPサーバーの拡充**: 追加ツール・リソースの実装
 - **Web UI**: Streamlit/Gradioによるインタラクティブダッシュボード
 - **API サーバー**: FastAPIによるREST API提供
-
-### コード品質
-
-- **型チェック強化**: mypy strict モードへの対応
-- **ドキュメント**: Sphinxによる API ドキュメント自動生成
-- **CI/CD**: GitHub Actionsによる自動テスト・デプロイ
 
 ## ライセンス
 

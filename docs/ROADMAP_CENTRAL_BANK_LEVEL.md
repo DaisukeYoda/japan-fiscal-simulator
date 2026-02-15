@@ -1,30 +1,31 @@
 # 中央銀行レベルDSGEモデルへのロードマップ
 
-本ドキュメントでは、現在の5方程式New Keynesianモデルを中央銀行レベル（Smets-Wouters級）のDSGEモデルへ拡張するための段階的ロードマップを示す。
+本ドキュメントでは、5方程式New Keynesianモデルを中央銀行レベル（Smets-Wouters級）のDSGEモデルへ拡張するためのロードマップを示す。Phase 1〜5は完了済みであり、残るはPhase 6（日本固有の拡張）のみとなっている。
 
 ## 目次
 
-1. [現状分析](#現状分析)
-2. [目標モデル](#目標モデル)
-3. [フェーズ別実装計画](#フェーズ別実装計画)
-4. [解法の選択](#解法の選択)
-5. [検証とテスト](#検証とテスト)
-6. [参考文献](#参考文献)
+1. [初期状態](#初期状態phase-1-開始前)
+2. [現在の到達点](#現在の到達点phase-5-完了)
+3. [目標モデル](#目標モデル)
+4. [フェーズ別実装計画](#フェーズ別実装計画)
+5. [解法の選択](#解法の選択)
+6. [検証とテスト](#検証とテスト)
+7. [参考文献](#参考文献)
 
 ---
 
-## 現状分析
+## 初期状態（Phase 1 開始前）
 
-### 現在のモデル構成
+### 当初のモデル構成
 
-| 項目 | 現状 |
-|------|------|
+| 項目 | 初期状態 |
+|------|----------|
 | コア方程式数 | 5 |
 | 変数数 | 14（5コア + 9派生） |
 | ショック数 | 5 |
 | 解法 | 縮約形解法 |
 
-### コア方程式
+### 当初のコア方程式
 
 ```
 1. IS曲線:      y_t = E[y_{t+1}] - σ^{-1}(r_t - E[π_{t+1}]) + g_y × g_t
@@ -34,24 +35,67 @@
 5. 技術:        a_t = ρ_a × a_{t-1} + e_a,t
 ```
 
+---
+
+## 現在の到達点（Phase 5 完了）
+
+### モデル構成
+
+| 項目 | 現状 |
+|------|------|
+| コア方程式数 | 14 |
+| 変数数 | 16（y, c, i, n, k, π, r, R, w, mc, g, b, τ_c, a, q, r^k） |
+| 構造ショック数 | 7（e_a, e_g, e_m, e_tau, e_risk, e_i, e_p） |
+| 状態変数 | 5 |
+| 制御変数 | 9 |
+| 解法 | QZ分解ベースのBlanchard-Kahn/Klein法 |
+| 推定手法 | Metropolis-Hastings MCMC（カルマンフィルタ尤度） |
+
 ### 現在のアーキテクチャ
 
 ```
 src/japan_fiscal_simulator/
 ├── core/
-│   ├── equations/          # 方程式モジュール（拡張ポイント）
+│   ├── equations/              # 14方程式モジュール
 │   │   ├── base.py
-│   │   ├── is_curve.py
-│   │   ├── phillips_curve.py
-│   │   ├── taylor_rule.py
-│   │   └── fiscal_rule.py
-│   ├── nk_model.py         # 3方程式NKモデル
-│   ├── model.py            # 14変数拡張モデル
-│   ├── solver.py           # Blanchard-Kahn解法（未使用）
-│   └── simulation.py       # インパルス応答
-└── parameters/
-    ├── defaults.py         # パラメータ定義
-    └── calibration.py      # 日本向けキャリブレーション
+│   │   ├── is_curve.py         # IS曲線
+│   │   ├── phillips_curve.py   # Phillips曲線（インデクセーション付き）
+│   │   ├── wage_phillips.py    # 賃金NKPC（Calvo型）
+│   │   ├── taylor_rule.py      # Taylor則
+│   │   ├── marginal_cost.py    # 実質限界費用
+│   │   ├── capital.py          # 資本蓄積
+│   │   ├── investment.py       # 投資オイラー方程式
+│   │   ├── labor_demand.py     # 労働需要
+│   │   ├── mrs.py              # 限界代替率
+│   │   ├── resource_constraint.py  # 資源制約
+│   │   └── fiscal_rule.py      # 財政ルール
+│   ├── nk_model.py             # 14方程式NKモデル（BK解法）
+│   ├── model.py                # 16変数DSGEモデル
+│   ├── equation_system.py      # 方程式システム（A/B/C/D行列構築）
+│   ├── solver.py               # QZ分解BKソルバー
+│   ├── linear_solver.py        # 互換ラッパー
+│   ├── steady_state.py         # 定常状態ソルバー
+│   ├── simulation.py           # IRF・乗数計算
+│   ├── derived_coefficients.py # 係数計算ヘルパー
+│   └── exceptions.py           # カスタム例外
+├── estimation/                 # ベイズ推定モジュール
+│   ├── mcmc.py                 # Random Walk MH-MCMCサンプラー
+│   ├── state_space.py          # 状態空間表現
+│   ├── kalman_filter.py        # カルマンフィルタ（尤度計算）
+│   ├── priors.py               # 事前分布定義
+│   ├── parameter_mapping.py    # パラメータ写像
+│   ├── data_loader.py          # データローダー
+│   ├── data_fetcher.py         # データ取得ユーティリティ
+│   ├── diagnostics.py          # 収束診断（Gelman-Rubin等）
+│   └── results.py              # 推定結果管理
+├── parameters/
+│   ├── defaults.py             # パラメータ定義
+│   ├── calibration.py          # 日本向けキャリブレーション
+│   └── constants.py            # 定数定義
+├── policies/                   # 政策シミュレーション
+├── output/                     # グラフ・レポート出力
+├── cli/                        # CLIインターフェース
+└── mcp/                        # MCP（Claude Desktop連携）
 ```
 
 ---
@@ -93,7 +137,7 @@ src/japan_fiscal_simulator/
 
 ## フェーズ別実装計画
 
-### Phase 1: 資本蓄積の内生化
+### Phase 1: 資本蓄積の内生化 [完了]
 
 **目標**: 投資と資本ストックを明示的にモデル化
 
@@ -112,23 +156,14 @@ i_t = i_{t-1} + (1/S'') × q_t + e_i,t
 
 **実装タスク**:
 
-- [ ] `equations/capital.py` の作成
-- [ ] `equations/investment.py` の作成
-- [ ] 投資固有技術ショックの追加
-- [ ] `model.py` への統合
-
-**パラメータ追加**:
-
-```python
-@dataclass(frozen=True)
-class InvestmentParameters:
-    S_double_prime: float = 5.0  # 投資調整コスト曲率
-    delta: float = 0.025         # 資本減耗率（既存）
-```
+- [x] `equations/capital.py` の作成
+- [x] `equations/investment.py` の作成
+- [x] 投資固有技術ショックの追加
+- [x] `model.py` への統合
 
 ---
 
-### Phase 2: 労働市場の精緻化
+### Phase 2: 労働市場の精緻化 [完了]
 
 **目標**: 賃金硬直性と労働供給を明示的にモデル化
 
@@ -147,24 +182,14 @@ n_t = y_t - w_t + (1-α) × k_t
 
 **実装タスク**:
 
-- [ ] `equations/wage_phillips.py` の作成
-- [ ] `equations/labor_supply.py` の作成
-- [ ] 賃金マークアップショックの追加
-- [ ] 習慣形成の実装
-
-**パラメータ追加**:
-
-```python
-@dataclass(frozen=True)
-class LaborParameters:
-    theta_w: float = 0.75    # Calvo賃金硬直性
-    epsilon_w: float = 10.0  # 労働の代替弾力性
-    iota_w: float = 0.5      # 賃金インデクセーション
-```
+- [x] `equations/wage_phillips.py` の作成
+- [x] `equations/labor_demand.py` / `equations/mrs.py` の作成
+- [x] 賃金マークアップショックの追加
+- [x] 習慣形成の実装
 
 ---
 
-### Phase 3: 価格設定の精緻化
+### Phase 3: 価格設定の精緻化 [完了]
 
 **目標**: 価格インデクセーションと限界費用の明示化
 
@@ -190,7 +215,7 @@ y_t = a_t + α × k_{t-1} + (1-α) × n_t
 
 ---
 
-### Phase 4: 完全なBlanchard-Kahn解法
+### Phase 4: 完全なBlanchard-Kahn解法 [完了]
 
 **目標**: 行列ベースの一般的な解法への移行
 
@@ -243,7 +268,7 @@ def solve_blanchard_kahn(A: np.ndarray, B: np.ndarray) -> PolicyFunction:
 
 ---
 
-### Phase 5: ベイズ推定
+### Phase 5: ベイズ推定 [完了]
 
 **目標**: 日本経済データによるパラメータ推定
 
@@ -251,10 +276,21 @@ def solve_blanchard_kahn(A: np.ndarray, B: np.ndarray) -> PolicyFunction:
 
 **実装タスク**:
 
-- [ ] 状態空間表現への変換
-- [ ] カルマンフィルタによる尤度計算
-- [ ] MCMCサンプラーの実装
-- [ ] 事前分布の設定
+- [x] 状態空間表現への変換（`state_space.py`）
+- [x] カルマンフィルタによる尤度計算（`kalman_filter.py`）
+- [x] MCMCサンプラーの実装（`mcmc.py` — Random Walk Metropolis-Hastings）
+- [x] 事前分布の設定（`priors.py`）
+- [x] パラメータ写像（`parameter_mapping.py`）
+- [x] データローダー（`data_loader.py` / `data_fetcher.py`）
+- [x] 収束診断（`diagnostics.py` — Gelman-Rubin統計量等）
+- [x] 推定結果管理（`results.py`）
+
+**実装メモ（2026-02-12）**:
+
+- `estimation/` パッケージとして独立モジュール化（10ファイル）
+- MCMCは4チェーン並列、100,000ドロー、50,000バーンイン、シンニング10がデフォルト
+- 事後モード探索 → 適応的サンプリングの2段階推定
+- Dynare非依存のPure Python実装
 
 **データ要件**:
 
@@ -306,39 +342,20 @@ def solve_blanchard_kahn(A: np.ndarray, B: np.ndarray) -> PolicyFunction:
 | **Klein法** | 数値安定性高い | 実装複雑 | Phase 4以降 |
 | **Sims法** | 特異行列対応 | 計算コスト高 | 特殊ケース |
 
-### 推奨戦略
+### 実際の採用戦略
 
 ```
-Phase 1-2: 縮約形解法を維持しつつ方程式を追加
+Phase 1-3: 方程式を段階的に追加（5 → 14方程式）
      ↓
-Phase 3:   Blanchard-Kahn解法への移行を検討
+Phase 4:   QZ分解ベースのBlanchard-Kahn/Klein法を実装（scipy.linalg.ordqz）
      ↓
-Phase 4:   Klein法（QZ分解）を本格実装
+Phase 5:   Pure PythonでMH-MCMC + カルマンフィルタを実装（Dynare非依存）
      ↓
-Phase 5-6: Dynare連携またはDSGE.jl活用
+Phase 6:   日本固有の拡張（今後）
 ```
 
-### 外部ツール連携
-
-**Dynare連携のメリット**:
-- 解法が検証済み
-- ベイズ推定が組み込み
-- IRF、分散分解が自動
-
-**連携方法**:
-
-```python
-# Python から Dynare を呼び出す
-def run_dynare_model(mod_file: str, params: dict) -> dict:
-    # .mod ファイルを生成
-    generate_mod_file(mod_file, params)
-
-    # Dynare実行（MATLAB/Octave経由）
-    subprocess.run(['octave', '--eval', f"dynare {mod_file}"])
-
-    # 結果を読み込み
-    return load_dynare_results(mod_file)
-```
+Dynare連携は採用せず、Pure Pythonによる自己完結型の実装を選択した。
+これによりMCP/CLIとの統合が容易になり、依存関係（MATLAB/Octave）を排除できた。
 
 ---
 
@@ -415,16 +432,16 @@ def test_numerical_stability():
 
 ## マイルストーン
 
-| フェーズ | 方程式数 | 主要成果物 |
-|----------|----------|-----------|
-| 現状 | 5 | 基本的なIRF分析 |
-| Phase 1 | 8 | 資本・投資ダイナミクス |
-| Phase 2 | 11 | 労働市場分析 |
-| Phase 3 | 14 | 価格・賃金の相互作用 |
-| Phase 4 | 14 | 一般的BK解法 |
-| Phase 5 | 14 | ベイズ推定済みモデル |
-| Phase 6 | 18+ | 日本特化型モデル |
+| フェーズ | 方程式数 | 主要成果物 | 状態 |
+|----------|----------|-----------|------|
+| 初期 | 5 | 基本的なIRF分析 | 完了 |
+| Phase 1 | 8 | 資本蓄積・投資ダイナミクス | 完了 |
+| Phase 2 | 11 | 賃金硬直性・労働市場 | 完了 |
+| Phase 3 | 14 | 価格インデクセーション・限界費用 | 完了 |
+| Phase 4 | 14 | QZ分解BK解法（14x14システム） | 完了 |
+| Phase 5 | 14 | MH-MCMCベイズ推定 | 完了 |
+| Phase 6 | 18+ | 日本固有拡張（ZLB, 高債務, 人口動態, 開放経済） | 未着手 |
 
 ---
 
-*最終更新: 2026-02-03*
+*最終更新: 2026-02-12*

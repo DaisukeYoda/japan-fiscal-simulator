@@ -50,6 +50,17 @@ uv run jpfs mcp  # Start MCP server
 - `simulation.py`: `ImpulseResponseSimulator` and `FiscalMultiplierCalculator` for policy analysis
 - `solver.py` / `linear_solver.py`: QZ-based Blanchard-Kahn solution methods (`linear_solver.py` is compatibility wrapper)
 
+### Bayesian Estimation (`src/japan_fiscal_simulator/estimation/`)
+
+- `mcmc.py`: Random Walk Metropolis-Hastings sampler (4 chains, 100K draws default)
+- `state_space.py`: State space representation builder for the DSGE model
+- `kalman_filter.py`: Kalman filter for likelihood computation
+- `priors.py`: Prior distribution definitions for structural parameters
+- `parameter_mapping.py`: Maps between model parameters and estimation parameters
+- `data_loader.py` / `data_fetcher.py`: Japanese economic data loading and fetching
+- `diagnostics.py`: Convergence diagnostics (Gelman-Rubin statistics, etc.)
+- `results.py`: Estimation results management
+
 ### Parameters (`src/japan_fiscal_simulator/parameters/`)
 
 - `defaults.py`: Parameter dataclasses for each sector (`HouseholdParameters`, `FirmParameters`, `GovernmentParameters`, `CentralBankParameters`, `FinancialParameters`, `ShockParameters`)

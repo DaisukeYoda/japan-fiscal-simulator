@@ -182,6 +182,7 @@ class TestParameterMapping:
             "central_bank",
             "shocks",
             "measurement",
+            "steady_state",
         }
         assert sections == expected
 

@@ -184,13 +184,13 @@ class TestShortChainEstimation:
         assert isinstance(r.parameter_names, list)
         assert isinstance(r.log_marginal_likelihood, float)
         assert isinstance(r.diagnostics.converged, bool)
-        assert len(r.summaries) == 27
+        assert len(r.summaries) == 31
 
     def test_posterior_samples_shape(self, estimation_result: EstimationResult) -> None:
         """事後サンプルの形状が正しい"""
         r = estimation_result
         n_kept = 40 - 20  # n_draws - n_burnin
-        assert r.posterior_samples.shape == (2 * n_kept, 27)
+        assert r.posterior_samples.shape == (2 * n_kept, 31)
 
     def test_summaries_have_valid_statistics(self, estimation_result: EstimationResult) -> None:
         """サマリー統計量が有限値"""
@@ -241,8 +241,8 @@ class TestShortChainEstimation:
     def test_diagnostics_complete(self, estimation_result: EstimationResult) -> None:
         """診断結果が完全"""
         d = estimation_result.diagnostics
-        assert d.r_hat.shape == (27,)
-        assert d.ess.shape == (27,)
-        assert d.geweke_z.shape == (27,)
-        assert d.geweke_p.shape == (27,)
-        assert len(d.parameter_names) == 27
+        assert d.r_hat.shape == (31,)
+        assert d.ess.shape == (31,)
+        assert d.geweke_z.shape == (31,)
+        assert d.geweke_p.shape == (31,)
+        assert len(d.parameter_names) == 31

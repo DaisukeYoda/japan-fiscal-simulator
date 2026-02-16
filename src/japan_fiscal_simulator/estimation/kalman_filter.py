@@ -41,6 +41,7 @@ def kalman_filter(
     H: np.ndarray,
     a0: np.ndarray | None = None,
     P0: np.ndarray | None = None,
+    d: np.ndarray | None = None,
 ) -> KalmanFilterResult:
     """標準Kalmanフィルタ
 
@@ -53,6 +54,8 @@ def kalman_filter(
         H: (n_obs, n_obs) 測定誤差共分散行列
         a0: (n_state,) 初期状態。Noneの場合はゼロ。
         P0: (n_state, n_state) 初期共分散。Noneの場合はLyapunov方程式から計算。
+        d: (n_obs,) 観測方程式の定数項。Noneの場合はゼロ（従来互換）。
+            定常状態の平均値（トレンド成長率、定常状態インフレ率等）を指定する。
 
     Returns:
         KalmanFilterResult
@@ -60,10 +63,13 @@ def kalman_filter(
     Raises:
         KalmanFilterError: フィルタ計算中にNaN/infが発生した場合
     """
-    _validate_dimensions(y, T, Z, R, Q, H, a0, P0)
+    _validate_dimensions(y, T, Z, R, Q, H, a0, P0, d)
 
     T_obs, n_obs = y.shape
     n_state = T.shape[0]
+
+    # 観測方程式の定数項
+    d_vec = np.zeros(n_obs) if d is None else d
 
     # 初期状態
     a_filt = np.zeros(n_state) if a0 is None else a0.copy()
@@ -100,13 +106,15 @@ def kalman_filter(
                 Z_t = Z[valid, :]
                 H_t = H[np.ix_(valid, valid)]
                 obs_valid = obs_t[valid]
+                d_t = d_vec[valid]
             else:
                 Z_t = Z
                 H_t = H
                 obs_valid = obs_t
+                d_t = d_vec
 
             # --- Innovation ---
-            v = obs_valid - Z_t @ a_pred
+            v = obs_valid - d_t - Z_t @ a_pred
             F = Z_t @ P_pred @ Z_t.T + H_t
 
             # 対称性の強制
@@ -219,6 +227,7 @@ def _validate_dimensions(
     H: np.ndarray,
     a0: np.ndarray | None,
     P0: np.ndarray | None,
+    d: np.ndarray | None = None,
 ) -> None:
     """入力行列の次元整合性を検証する"""
     if y.ndim != 2:
@@ -242,3 +251,5 @@ def _validate_dimensions(
         raise KalmanFilterError(f"a0は({n_state},)が必要 (got {a0.shape})")
     if P0 is not None and P0.shape != (n_state, n_state):
         raise KalmanFilterError(f"P0は({n_state}, {n_state})が必要 (got {P0.shape})")
+    if d is not None and d.shape != (n_obs,):
+        raise KalmanFilterError(f"dは({n_obs},)が必要 (got {d.shape})")

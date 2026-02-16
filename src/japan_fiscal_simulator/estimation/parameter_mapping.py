@@ -77,7 +77,15 @@ class ParameterMapping:
         ParameterSpec("me_w", "measurement", "me_w", 0.01, 0.001, 0.1),
         ParameterSpec("me_n", "measurement", "me_n", 0.01, 0.001, 0.1),
         ParameterSpec("me_r", "measurement", "me_r", 0.01, 0.001, 0.1),
+        # --- 定常状態パラメータ（観測方程式の定数項） ---
+        ParameterSpec("gamma_bar", "steady_state", "gamma_bar", 0.4, -1.0, 3.0),
+        ParameterSpec("pi_bar", "steady_state", "pi_bar", 0.0, -2.0, 5.0),
+        ParameterSpec("n_bar", "steady_state", "n_bar", 0.0, -10.0, 10.0),
+        ParameterSpec("r_bar", "steady_state", "r_bar", 0.1, -2.0, 5.0),
     ]
+
+    # DefaultParametersに含まれないセクション
+    _NON_MODEL_SECTIONS: set[str] = {"measurement", "steady_state"}
 
     def __init__(self) -> None:
         """マッピングの初期化と内部インデックスの構築"""
@@ -87,8 +95,13 @@ class ParameterMapping:
         self._measurement_indices: list[int] = [
             i for i, spec in enumerate(self.ESTIMATED_PARAMS) if spec.section == "measurement"
         ]
+        self._steady_state_indices: list[int] = [
+            i for i, spec in enumerate(self.ESTIMATED_PARAMS) if spec.section == "steady_state"
+        ]
         self._model_indices: list[int] = [
-            i for i, spec in enumerate(self.ESTIMATED_PARAMS) if spec.section != "measurement"
+            i
+            for i, spec in enumerate(self.ESTIMATED_PARAMS)
+            if spec.section not in self._NON_MODEL_SECTIONS
         ]
 
     @property
@@ -175,6 +188,36 @@ class ParameterMapping:
 
         return np.array([theta[i] for i in self._measurement_indices])
 
+    def theta_to_steady_state_means(self, theta: np.ndarray) -> np.ndarray:
+        """θベクトルから観測方程式の定常状態定数ベクトル d を構築する
+
+        SW2007方式の観測方程式:
+            Δy_t = γ + ŷ_t - ŷ_{t-1}
+            Δc_t = γ + ĉ_t - ĉ_{t-1}
+            Δi_t = γ + î_t - î_{t-1}
+            π_t  = π* + π̂_t
+            Δw_t = γ + ŵ_t - ŵ_{t-1}
+            n_t  = n* + n̂_t
+            r_t  = r* + r̂_t
+
+        Args:
+            theta: 推定パラメータベクトル（長さ n_params）
+
+        Returns:
+            定常状態定数ベクトル d (7,)
+        """
+        if len(theta) != self.n_params:
+            msg = f"θの長さが不正: {len(theta)} != {self.n_params}"
+            raise ValueError(msg)
+
+        gamma_bar = theta[self._name_to_index["gamma_bar"]]
+        pi_bar = theta[self._name_to_index["pi_bar"]]
+        n_bar = theta[self._name_to_index["n_bar"]]
+        r_bar = theta[self._name_to_index["r_bar"]]
+
+        # d = [γ, γ, γ, π*, γ, n*, r*]
+        return np.array([gamma_bar, gamma_bar, gamma_bar, pi_bar, gamma_bar, n_bar, r_bar])
+
     def params_to_theta(self, params: DefaultParameters) -> np.ndarray:
         """DefaultParametersからθベクトルを構築する
 
@@ -198,7 +241,7 @@ class ParameterMapping:
         }
 
         for i, spec in enumerate(self.ESTIMATED_PARAMS):
-            if spec.section == "measurement":
+            if spec.section in self._NON_MODEL_SECTIONS:
                 theta[i] = spec.default
             else:
                 section_obj = section_to_attr[spec.section]
@@ -210,3 +253,13 @@ class ParameterMapping:
     def measurement_names(self) -> list[str]:
         """観測誤差パラメータ名のリスト"""
         return [self.ESTIMATED_PARAMS[i].name for i in self._measurement_indices]
+
+    @property
+    def n_steady_state(self) -> int:
+        """定常状態パラメータ数"""
+        return len(self._steady_state_indices)
+
+    @property
+    def steady_state_names(self) -> list[str]:
+        """定常状態パラメータ名のリスト"""
+        return [self.ESTIMATED_PARAMS[i].name for i in self._steady_state_indices]

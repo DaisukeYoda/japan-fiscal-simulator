@@ -317,7 +317,5 @@ class StateSpaceBuilder:
             return np.zeros(cls.N_OBS)
         d = np.asarray(steady_state_means, dtype=np.float64)
         if d.shape != (cls.N_OBS,):
-            raise ValueError(
-                f"steady_state_meansのサイズが不正: {d.shape} != ({cls.N_OBS},)"
-            )
+            raise ValueError(f"steady_state_meansのサイズが不正: {d.shape} != ({cls.N_OBS},)")
         return d.copy()

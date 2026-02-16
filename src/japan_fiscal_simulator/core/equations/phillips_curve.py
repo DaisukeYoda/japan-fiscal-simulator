@@ -59,9 +59,7 @@ class PhillipsCurve:
 
     @property
     def description(self) -> str:
-        return (
-            "π_t = (ι_p/(1+βι_p))π_{t-1} + (β/(1+βι_p))E[π_{t+1}] + κ·mc_t + e_p,t"
-        )
+        return "π_t = (ι_p/(1+βι_p))π_{t-1} + (β/(1+βι_p))E[π_{t+1}] + κ·mc_t + e_p,t"
 
     @property
     def kappa(self) -> float:

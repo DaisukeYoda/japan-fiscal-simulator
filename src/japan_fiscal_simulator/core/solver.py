@@ -99,12 +99,10 @@ class BlanchardKahnSolver:
         if n_unstable != self.n_forward_looking:
             if n_unstable > self.n_forward_looking:
                 raise BlanchardKahnError(
-                    "不安定固有値が多すぎます: "
-                    f"{n_unstable} > {self.n_forward_looking} (解なし)"
+                    f"不安定固有値が多すぎます: {n_unstable} > {self.n_forward_looking} (解なし)"
                 )
             raise BlanchardKahnError(
-                "不安定固有値が少なすぎます: "
-                f"{n_unstable} < {self.n_forward_looking} (不定解)"
+                f"不安定固有値が少なすぎます: {n_unstable} < {self.n_forward_looking} (不定解)"
             )
 
         P, R, policy_residual_inf, used_fallback = self._solve_policy_matrices(
@@ -213,7 +211,9 @@ class BlanchardKahnSolver:
 
         if (not solution.success) or err > max_policy_residual:
             # local minima 回避のため、dogbox + 決定的な微小摂動初期値で再探索
-            candidates: list[tuple[np.ndarray, float, bool]] = [(x_candidate, err, bool(solution.success))]
+            candidates: list[tuple[np.ndarray, float, bool]] = [
+                (x_candidate, err, bool(solution.success))
+            ]
             for guess in (
                 x0,
                 x0 + np.random.default_rng(0).normal(scale=0.2, size=x0.shape),
@@ -235,7 +235,9 @@ class BlanchardKahnSolver:
             stable_candidates: list[tuple[np.ndarray, float, bool]] = []
             for cand_x, cand_err, cand_success in candidates:
                 cand_P, _ = unpack(cand_x)
-                cand_sr = float(np.max(np.abs(np.linalg.eigvals(cand_P)))) if cand_P.size > 0 else 0.0
+                cand_sr = (
+                    float(np.max(np.abs(np.linalg.eigvals(cand_P)))) if cand_P.size > 0 else 0.0
+                )
                 if cand_sr < 1.0 + stability_tol:
                     stable_candidates.append((cand_x, cand_err, cand_success))
 
@@ -324,7 +326,9 @@ class BlanchardKahnSolver:
         except np.linalg.LinAlgError:
             solution, residuals, _, _ = np.linalg.lstsq(system_matrix, rhs, rcond=None)
             if residuals.size > 0 and float(np.max(residuals)) > 1e-8:
-                raise SingularMatrixError("ショック応答行列の連立方程式が特異で解けません") from None
+                raise SingularMatrixError(
+                    "ショック応答行列の連立方程式が特異で解けません"
+                ) from None
 
         Q = solution[:ns, :]
         S = solution[ns:, :]

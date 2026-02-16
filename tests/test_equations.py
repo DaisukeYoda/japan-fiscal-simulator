@@ -41,6 +41,7 @@ from japan_fiscal_simulator.core.equations import (
 # IS Curve
 # ---------------------------------------------------------------------------
 
+
 class TestISCurve:
     def test_no_habit_coefficients(self) -> None:
         """習慣形成なし（h=0）の場合の係数を検証"""
@@ -83,6 +84,7 @@ class TestISCurve:
 # Taylor Rule
 # ---------------------------------------------------------------------------
 
+
 class TestTaylorRule:
     def test_coefficients(self) -> None:
         phi_pi = 1.5
@@ -97,18 +99,14 @@ class TestTaylorRule:
 
     def test_taylor_principle_satisfied(self) -> None:
         """Taylor原則が成立するケース"""
-        satisfied, criterion = check_taylor_principle(
-            phi_pi=1.5, phi_y=0.125, beta=0.99, kappa=0.1
-        )
+        satisfied, criterion = check_taylor_principle(phi_pi=1.5, phi_y=0.125, beta=0.99, kappa=0.1)
         expected = 1.5 + (1 - 0.99) / 0.1 * 0.125
         assert satisfied is True
         assert criterion == pytest.approx(expected)
 
     def test_taylor_principle_violated(self) -> None:
         """Taylor原則が破れるケース（φ_π < 1, φ_y = 0）"""
-        satisfied, criterion = check_taylor_principle(
-            phi_pi=0.8, phi_y=0.0, beta=0.99, kappa=0.1
-        )
+        satisfied, criterion = check_taylor_principle(phi_pi=0.8, phi_y=0.0, beta=0.99, kappa=0.1)
         assert satisfied is False
         assert criterion == pytest.approx(0.8)
 
@@ -116,6 +114,7 @@ class TestTaylorRule:
 # ---------------------------------------------------------------------------
 # Phillips Curve
 # ---------------------------------------------------------------------------
+
 
 class TestPhillipsCurve:
     def test_slope_no_indexation(self) -> None:
@@ -174,6 +173,7 @@ class TestPhillipsCurve:
 # Resource Constraint
 # ---------------------------------------------------------------------------
 
+
 class TestResourceConstraint:
     def test_coefficients(self) -> None:
         s_c, s_i, s_g = 0.6, 0.2, 0.2
@@ -189,6 +189,7 @@ class TestResourceConstraint:
 # ---------------------------------------------------------------------------
 # Fiscal Rule (AR(1) processes)
 # ---------------------------------------------------------------------------
+
 
 class TestGovernmentSpendingProcess:
     def test_coefficients(self) -> None:
@@ -214,6 +215,7 @@ class TestTechnologyProcess:
 # Marginal Cost
 # ---------------------------------------------------------------------------
 
+
 class TestMarginalCostEquation:
     def test_coefficients(self) -> None:
         alpha = 0.33
@@ -229,6 +231,7 @@ class TestMarginalCostEquation:
 # ---------------------------------------------------------------------------
 # MRS
 # ---------------------------------------------------------------------------
+
 
 class TestMRSEquation:
     def test_coefficients(self) -> None:
@@ -246,6 +249,7 @@ class TestMRSEquation:
 # Capital Accumulation
 # ---------------------------------------------------------------------------
 
+
 class TestCapitalAccumulation:
     def test_coefficients(self) -> None:
         delta = 0.025
@@ -260,6 +264,7 @@ class TestCapitalAccumulation:
 # ---------------------------------------------------------------------------
 # Tobin's Q
 # ---------------------------------------------------------------------------
+
 
 class TestTobinsQEquation:
     def test_coefficients(self) -> None:
@@ -278,6 +283,7 @@ class TestTobinsQEquation:
 # Investment Adjustment
 # ---------------------------------------------------------------------------
 
+
 class TestInvestmentAdjustmentEquation:
     def test_coefficients(self) -> None:
         S_pp = 5.0
@@ -294,6 +300,7 @@ class TestInvestmentAdjustmentEquation:
 # Capital Rental Rate
 # ---------------------------------------------------------------------------
 
+
 class TestCapitalRentalRateEquation:
     def test_coefficients(self) -> None:
         coefs = CapitalRentalRateEquation().coefficients()
@@ -306,6 +313,7 @@ class TestCapitalRentalRateEquation:
 # ---------------------------------------------------------------------------
 # Labor Demand
 # ---------------------------------------------------------------------------
+
 
 class TestLaborDemand:
     def test_coefficients(self) -> None:
@@ -324,6 +332,7 @@ class TestLaborDemand:
 # Wage Phillips Curve
 # ---------------------------------------------------------------------------
 
+
 class TestWagePhillipsCurve:
     def test_adjustment_speed(self) -> None:
         """賃金調整速度 λ_w の計算を検証"""
@@ -336,9 +345,7 @@ class TestWagePhillipsCurve:
     def test_coefficients(self) -> None:
         beta = 0.99
         theta_w = 0.75
-        params = WagePhillipsCurveParameters(
-            beta=beta, theta_w=theta_w, sigma=2.0, phi=1.5
-        )
+        params = WagePhillipsCurveParameters(beta=beta, theta_w=theta_w, sigma=2.0, phi=1.5)
         eq = WagePhillipsCurve(params)
         coefs = eq.coefficients()
 

@@ -46,10 +46,7 @@ class WagePhillipsCurve:
 
     @property
     def description(self) -> str:
-        return (
-            "ŵ_t = (β/(1+β))E[ŵ_{t+1}] + (1/(1+β))ŵ_{t-1} "
-            "+ (λ_w/(1+β))(mrs_t - ŵ_t) + e_w,t"
-        )
+        return "ŵ_t = (β/(1+β))E[ŵ_{t+1}] + (1/(1+β))ŵ_{t-1} + (λ_w/(1+β))(mrs_t - ŵ_t) + e_w,t"
 
     @property
     def lambda_w(self) -> float:

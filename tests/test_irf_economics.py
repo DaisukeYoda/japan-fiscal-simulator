@@ -125,37 +125,22 @@ class TestConsumptionTaxCutShock:
 class TestLongRunConvergence:
     """全ショックが長期的に定常状態へ収束することを検証"""
 
-    def test_government_spending_converges(
-        self, simulator: ImpulseResponseSimulator
-    ) -> None:
+    def test_government_spending_converges(self, simulator: ImpulseResponseSimulator) -> None:
         """政府支出ショックがt=40までに収束する"""
         irf = simulator.simulate("e_g", shock_size=0.01, periods=40)
-        responses_at_end = [
-            abs(irf.get_response(var)[-1])
-            for var in ("y", "c", "pi", "R")
-        ]
+        responses_at_end = [abs(irf.get_response(var)[-1]) for var in ("y", "c", "pi", "R")]
         assert max(responses_at_end) < 0.01
 
-    def test_technology_shock_converges(
-        self, simulator: ImpulseResponseSimulator
-    ) -> None:
+    def test_technology_shock_converges(self, simulator: ImpulseResponseSimulator) -> None:
         """技術ショックがt=40までに収束する"""
         irf = simulator.simulate("e_a", shock_size=0.01, periods=40)
-        responses_at_end = [
-            abs(irf.get_response(var)[-1])
-            for var in ("y", "c", "pi", "R")
-        ]
+        responses_at_end = [abs(irf.get_response(var)[-1]) for var in ("y", "c", "pi", "R")]
         assert max(responses_at_end) < 0.01
 
-    def test_monetary_shock_converges(
-        self, simulator: ImpulseResponseSimulator
-    ) -> None:
+    def test_monetary_shock_converges(self, simulator: ImpulseResponseSimulator) -> None:
         """金融政策ショックがt=40までに収束する"""
         irf = simulator.simulate("e_m", shock_size=0.01, periods=40)
-        responses_at_end = [
-            abs(irf.get_response(var)[-1])
-            for var in ("y", "c", "pi", "R")
-        ]
+        responses_at_end = [abs(irf.get_response(var)[-1]) for var in ("y", "c", "pi", "R")]
         assert max(responses_at_end) < 0.01
 
 

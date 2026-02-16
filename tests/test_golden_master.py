@@ -186,9 +186,7 @@ class TestImpulseResponseGoldenMaster:
         # 消費税増税は産出を減少させる
         assert y[0] < 0
 
-    def test_technology_shock_output_response(
-        self, simulator: ImpulseResponseSimulator
-    ) -> None:
+    def test_technology_shock_output_response(self, simulator: ImpulseResponseSimulator) -> None:
         """技術ショックの産出応答を検証"""
         result = simulator.simulate("e_a", shock_size=0.01, periods=20)
         y = result.get_response("y")
@@ -196,9 +194,7 @@ class TestImpulseResponseGoldenMaster:
         # 技術向上は産出を増加させる
         assert y[0] > 0
 
-    def test_monetary_shock_output_response(
-        self, simulator: ImpulseResponseSimulator
-    ) -> None:
+    def test_monetary_shock_output_response(self, simulator: ImpulseResponseSimulator) -> None:
         """金融政策ショックの産出応答を検証"""
         result = simulator.simulate("e_m", shock_size=0.01, periods=20)
         y = result.get_response("y")
@@ -235,9 +231,7 @@ class TestFiscalMultiplierGoldenMaster:
         model = DSGEModel(DefaultParameters())
         return FiscalMultiplierCalculator(model)
 
-    def test_spending_multiplier_impact(
-        self, calculator: FiscalMultiplierCalculator
-    ) -> None:
+    def test_spending_multiplier_impact(self, calculator: FiscalMultiplierCalculator) -> None:
         """政府支出乗数のインパクト値を検証"""
         result = calculator.compute_spending_multiplier(horizon=40)
 
@@ -245,9 +239,7 @@ class TestFiscalMultiplierGoldenMaster:
         assert result.impact > 0
         assert result.impact < 3
 
-    def test_spending_multiplier_cumulative(
-        self, calculator: FiscalMultiplierCalculator
-    ) -> None:
+    def test_spending_multiplier_cumulative(self, calculator: FiscalMultiplierCalculator) -> None:
         """政府支出乗数の累積値を検証"""
         result = calculator.compute_spending_multiplier(horizon=40)
 
@@ -255,9 +247,7 @@ class TestFiscalMultiplierGoldenMaster:
         assert result.cumulative_4q > 0
         assert result.cumulative_8q > 0
 
-    def test_tax_multiplier_sign(
-        self, calculator: FiscalMultiplierCalculator
-    ) -> None:
+    def test_tax_multiplier_sign(self, calculator: FiscalMultiplierCalculator) -> None:
         """消費税乗数の符号を検証"""
         result = calculator.compute_tax_multiplier(horizon=40)
 

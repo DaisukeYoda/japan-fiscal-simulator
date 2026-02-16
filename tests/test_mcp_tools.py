@@ -11,7 +11,9 @@ try:
 except (ImportError, TypeError, AssertionError):
     _pydantic_ok = False
 
-pytestmark = pytest.mark.skipif(not _pydantic_ok, reason="pydantic incompatible with this Python version")
+pytestmark = pytest.mark.skipif(
+    not _pydantic_ok, reason="pydantic incompatible with this Python version"
+)
 
 if _pydantic_ok:
     from japan_fiscal_simulator.core.exceptions import ShockValidationError

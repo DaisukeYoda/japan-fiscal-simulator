@@ -119,7 +119,7 @@ class ReportGenerator:
 
     def generate_simulation_report(
         self,
-        result: SimulationResult,
+        result: "SimulationResult",
         title: str | None = None,
         policy_recommendations: list[str] | None = None,
         caveats: list[str] | None = None,
@@ -187,7 +187,7 @@ class ReportGenerator:
 
         return report
 
-    def _generate_executive_summary(self, result: SimulationResult) -> str:
+    def _generate_executive_summary(self, result: "SimulationResult") -> str:
         """エグゼクティブサマリーを生成"""
         scenario = result.scenario
         summary_parts = []
@@ -235,7 +235,7 @@ class ReportGenerator:
 
     def generate_comparison_report(
         self,
-        comparison: ComparisonResult,
+        comparison: "ComparisonResult",
         title: str | None = None,
         save_path: Path | str | None = None,
     ) -> str:

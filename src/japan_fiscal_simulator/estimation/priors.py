@@ -157,7 +157,7 @@ class PriorConfig:
         return np.array([p.mean for p in self.priors])
 
     @classmethod
-    def smets_wouters_japan(cls) -> PriorConfig:
+    def smets_wouters_japan(cls) -> "PriorConfig":
         """Smets-Wouters (2007) + 日本経済向け事前分布を返す
 
         Sugo & Ueda (2008) の日本向けキャリブレーションを参考に調整。

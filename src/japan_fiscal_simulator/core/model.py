@@ -80,7 +80,7 @@ class DSGEModel:
     追加変数は定常状態関係から導出する。
     """
 
-    def __init__(self, params: DefaultParameters) -> None:
+    def __init__(self, params: "DefaultParameters") -> None:
         self.params = params
         self._steady_state: SteadyState | None = None
         self._policy_result: PolicyFunctionResult | None = None

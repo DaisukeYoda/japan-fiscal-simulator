@@ -16,7 +16,7 @@ class ConsumptionTaxAnalysis:
     """消費税政策の分析結果"""
 
     scenario: PolicyScenario
-    impulse_response: ImpulseResponseResult
+    impulse_response: "ImpulseResponseResult"
     output_effect_peak: float  # 産出への最大効果（%）
     consumption_effect_peak: float  # 消費への最大効果（%）
     revenue_impact: float  # 税収への影響
@@ -26,7 +26,7 @@ class ConsumptionTaxAnalysis:
 class ConsumptionTaxPolicy:
     """消費税政策のシナリオ生成と分析"""
 
-    def __init__(self, model: DSGEModel) -> None:
+    def __init__(self, model: "DSGEModel") -> None:
         self.model = model
 
     @staticmethod

@@ -1,7 +1,6 @@
 """DSGEモデルのデフォルトパラメータ定義"""
 
 from dataclasses import dataclass, field, replace
-from typing import Self
 
 
 @dataclass(frozen=True)
@@ -153,7 +152,7 @@ class DefaultParameters:
         investment: InvestmentParameters | None = None,
         labor: LaborParameters | None = None,
         shocks: ShockParameters | None = None,
-    ) -> Self:
+    ) -> "DefaultParameters":
         """パラメータの一部を更新した新しいインスタンスを返す"""
         return replace(
             self,

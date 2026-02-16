@@ -45,7 +45,7 @@ class ImpulseResponseResult:
 class ImpulseResponseSimulator:
     """インパルス応答関数のシミュレーター"""
 
-    def __init__(self, model: DSGEModel) -> None:
+    def __init__(self, model: "DSGEModel") -> None:
         self.model = model
 
     def simulate(
@@ -191,7 +191,7 @@ class FiscalMultiplierResult:
 class FiscalMultiplierCalculator:
     """財政乗数の計算"""
 
-    def __init__(self, model: DSGEModel) -> None:
+    def __init__(self, model: "DSGEModel") -> None:
         self.model = model
         self.simulator = ImpulseResponseSimulator(model)
 

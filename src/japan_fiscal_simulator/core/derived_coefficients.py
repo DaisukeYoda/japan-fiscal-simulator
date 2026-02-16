@@ -55,7 +55,7 @@ class DerivedCoefficients:
     状態遷移係数を計算する。
     """
 
-    def __init__(self, params: DefaultParameters) -> None:
+    def __init__(self, params: "DefaultParameters") -> None:
         self.params = params
 
     def compute_impulse_coefficients(self) -> ImpulseCoefficients:

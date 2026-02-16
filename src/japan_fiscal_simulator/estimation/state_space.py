@@ -311,7 +311,7 @@ class StateSpaceBuilder:
         観測方程式: z_t = d + Z @ α_t + η_t
 
         d = [γ, γ, γ, π*, γ, n*, r*] の形式。
-        Noneの場合はゼロベクトル（demean済みデータ用、従来互換）。
+        Noneの場合はゼロベクトル。
         """
         if steady_state_means is None:
             return np.zeros(cls.N_OBS)

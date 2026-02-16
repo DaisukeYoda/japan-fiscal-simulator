@@ -1,6 +1,6 @@
 """推定用データの読込・変換モジュール
 
-観測変数定義、CSV読込、データ変換（dlog、HPフィルタ、demean）を提供する。
+観測変数定義、CSV読込、データ変換（dlog、HPフィルタ）を提供する。
 """
 
 from dataclasses import dataclass
@@ -63,23 +63,18 @@ class EstimationData:
         cls,
         path: str | Path,
         observables: list[ObservableDefinition] | None = None,
-        *,
-        demean: bool = True,
     ) -> EstimationData:
         """CSVファイルから推定データを構築する
 
         Args:
             path: CSVファイルパス
             observables: 観測変数定義リスト。Noneの場合はDEFAULT_OBSERVABLESを使用。
-            demean: Trueの場合、各系列の平均を除去する（従来互換）。
-                定常状態パラメータを推定する場合はFalseを指定し、
-                生データのまま使用する。
 
         Returns:
             EstimationData インスタンス
         """
         loader = DataLoader(observables=observables)
-        return loader.load_csv(path, demean=demean)
+        return loader.load_csv(path)
 
 
 class DataLoader:
@@ -108,20 +103,18 @@ class DataLoader:
         """
         self.observables = observables or DEFAULT_OBSERVABLES
 
-    def load_csv(self, path: str | Path, *, demean: bool = True) -> EstimationData:
+    def load_csv(self, path: str | Path) -> EstimationData:
         """CSV読込→変換→EstimationData
 
         CSVフォーマット: date, gdp, consumption, investment, deflator, wage, employment, rate
         dlog変換後に1期分短くなるため、日付列も対応して短縮される。
+        定常状態の水準情報はMCMCで推定されるため、demeanは行わない。
 
         Args:
             path: CSVファイルパス
-            demean: Trueの場合、各系列の平均を除去する（従来互換）。
-                定常状態パラメータを推定する場合はFalseを指定し、
-                生データのまま使用する。
 
         Returns:
-            変換済みのEstimationData（demean=Trueの場合はdemean済み）
+            変換済みのEstimationData
         """
         filepath = Path(path)
         raw_text = filepath.read_text(encoding="utf-8")
@@ -175,10 +168,6 @@ class DataLoader:
 
         # (T, n_obs) 行列に結合
         data = np.column_stack(transformed_series)
-
-        # demean（定常状態パラメータ推定時はスキップ）
-        if demean:
-            data = self.demean(data)
 
         variable_names = [obs.name for obs in self.observables]
         n_periods, n_obs = data.shape
@@ -235,24 +224,3 @@ class DataLoader:
         cycle = series - trend
         return trend, cycle
 
-    @staticmethod
-    def demean(data: np.ndarray) -> np.ndarray:
-        """各列からNaNを除いた平均を引く
-
-        Args:
-            data: (T, n_obs) の行列
-
-        Returns:
-            各列の平均が0に近い行列
-        """
-        result = data.copy()
-        if result.ndim == 1:
-            mask = ~np.isnan(result)
-            result[mask] -= np.mean(result[mask])
-        else:
-            for j in range(result.shape[1]):
-                col = result[:, j]
-                mask = ~np.isnan(col)
-                if np.any(mask):
-                    col[mask] -= np.mean(col[mask])
-        return result

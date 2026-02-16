@@ -3,6 +3,14 @@
 このプロジェクトのすべての重要な変更を記録します。
 フォーマットは [Keep a Changelog](https://keepachangelog.com/ja/) に基づいています。
 
+## [0.4.0] - 2026-02-17
+
+### 変更
+
+- Python 3.13サポートとバージョンメタデータの正規化
+- OSS公開に必要な設定ファイルを追加（LICENSE、CONTRIBUTING等）
+- lint/format設定の改善（per-file-ignores追加、ruff format適用）
+
 ## [0.3.0] - 2026-02-17
 
 ### 追加

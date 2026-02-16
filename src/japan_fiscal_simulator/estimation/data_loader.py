@@ -1,6 +1,6 @@
 """推定用データの読込・変換モジュール
 
-観測変数定義、CSV読込、データ変換（dlog、HPフィルタ、demean）を提供する。
+観測変数定義、CSV読込、データ変換（dlog、HPフィルタ）を提供する。
 """
 
 from dataclasses import dataclass
@@ -108,12 +108,13 @@ class DataLoader:
 
         CSVフォーマット: date, gdp, consumption, investment, deflator, wage, employment, rate
         dlog変換後に1期分短くなるため、日付列も対応して短縮される。
+        定常状態の水準情報はMCMCで推定されるため、demeanは行わない。
 
         Args:
             path: CSVファイルパス
 
         Returns:
-            変換・demean済みのEstimationData
+            変換済みのEstimationData
         """
         filepath = Path(path)
         raw_text = filepath.read_text(encoding="utf-8")
@@ -167,9 +168,6 @@ class DataLoader:
 
         # (T, n_obs) 行列に結合
         data = np.column_stack(transformed_series)
-
-        # demean
-        data = self.demean(data)
 
         variable_names = [obs.name for obs in self.observables]
         n_periods, n_obs = data.shape
@@ -226,24 +224,3 @@ class DataLoader:
         cycle = series - trend
         return trend, cycle
 
-    @staticmethod
-    def demean(data: np.ndarray) -> np.ndarray:
-        """各列からNaNを除いた平均を引く
-
-        Args:
-            data: (T, n_obs) の行列
-
-        Returns:
-            各列の平均が0に近い行列
-        """
-        result = data.copy()
-        if result.ndim == 1:
-            mask = ~np.isnan(result)
-            result[mask] -= np.mean(result[mask])
-        else:
-            for j in range(result.shape[1]):
-                col = result[:, j]
-                mask = ~np.isnan(col)
-                if np.any(mask):
-                    col[mask] -= np.mean(col[mask])
-        return result

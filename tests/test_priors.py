@@ -197,8 +197,8 @@ class TestPriorConfig:
     def test_smets_wouters_japan_parameter_count(self) -> None:
         """SW日本版事前分布のパラメータ数が正しい"""
         config = PriorConfig.smets_wouters_japan()
-        # 構造8 + 金融政策2 + rho_r 1 + ショック持続性3 + ショックσ6 + 観測誤差7 = 27
-        assert config.n_params == 27
+        # 構造8 + 金融政策2 + rho_r 1 + ショック持続性3 + ショックσ6 + 観測誤差7 + 定常状態4 = 31
+        assert config.n_params == 31
 
     def test_smets_wouters_japan_names(self) -> None:
         """SW日本版事前分布のパラメータ名が正しい"""
@@ -227,6 +227,11 @@ class TestPriorConfig:
         # 観測誤差
         assert "me_y" in names
         assert "me_r" in names
+        # 定常状態パラメータ
+        assert "gamma_bar" in names
+        assert "pi_bar" in names
+        assert "n_bar" in names
+        assert "r_bar" in names
 
     def test_log_prior_at_means_is_finite(self) -> None:
         """事前分布の平均値で対数事前確率が有限"""

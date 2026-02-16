@@ -423,3 +423,23 @@ class TestInputValidation:
     ) -> None:
         with pytest.raises(ValueError, match="measurement_errors"):
             StateSpaceBuilder.build(solution, shock_stds, np.ones(3))
+
+    def test_wrong_steady_state_means_size(
+        self,
+        solution: NKSolutionResult,
+        shock_stds: np.ndarray,
+        measurement_errors: np.ndarray,
+    ) -> None:
+        with pytest.raises(ValueError, match="steady_state_means"):
+            StateSpaceBuilder.build(solution, shock_stds, measurement_errors, np.ones(3))
+
+    def test_steady_state_means_from_list(
+        self,
+        solution: NKSolutionResult,
+        shock_stds: np.ndarray,
+        measurement_errors: np.ndarray,
+    ) -> None:
+        """リストを渡しても正しく変換される"""
+        d_list = [0.4, 0.4, 0.4, 0.0, 0.4, 0.0, 0.1]
+        ss = StateSpaceBuilder.build(solution, shock_stds, measurement_errors, d_list)
+        np.testing.assert_allclose(ss.d, d_list)

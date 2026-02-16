@@ -370,5 +370,38 @@ class PriorConfig:
                 std=0.01,
                 lower_bound=0.0,
             ),
+            # 定常状態パラメータ（観測方程式の定数項）
+            ParameterPrior(
+                name="gamma_bar",
+                dist_type=DistributionType.NORMAL,
+                mean=0.4,
+                std=0.2,
+                lower_bound=-np.inf,
+                upper_bound=np.inf,
+            ),
+            ParameterPrior(
+                name="pi_bar",
+                dist_type=DistributionType.NORMAL,
+                mean=0.0,
+                std=0.5,
+                lower_bound=-np.inf,
+                upper_bound=np.inf,
+            ),
+            ParameterPrior(
+                name="n_bar",
+                dist_type=DistributionType.NORMAL,
+                mean=0.0,
+                std=2.0,
+                lower_bound=-np.inf,
+                upper_bound=np.inf,
+            ),
+            ParameterPrior(
+                name="r_bar",
+                dist_type=DistributionType.NORMAL,
+                mean=0.1,
+                std=0.5,
+                lower_bound=-np.inf,
+                upper_bound=np.inf,
+            ),
         ]
         return cls(priors)

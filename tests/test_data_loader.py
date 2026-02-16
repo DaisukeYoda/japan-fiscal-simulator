@@ -94,43 +94,6 @@ class TestHPFilter:
         assert len(cycle) == len(series)
 
 
-class TestDemean:
-    """demean のテスト"""
-
-    def test_result_has_zero_mean(self) -> None:
-        """結果の各列の平均がゼロであることを確認"""
-        data = np.array([[1.0, 10.0], [2.0, 20.0], [3.0, 30.0]])
-        result = DataLoader.demean(data)
-        for j in range(data.shape[1]):
-            np.testing.assert_allclose(np.mean(result[:, j]), 0.0, atol=1e-14)
-
-    def test_1d_array(self) -> None:
-        """1次元配列でも動作することを確認"""
-        data = np.array([5.0, 10.0, 15.0])
-        result = DataLoader.demean(data)
-        np.testing.assert_allclose(np.mean(result), 0.0, atol=1e-14)
-
-    def test_with_nan(self) -> None:
-        """NaN含みデータで正しくdemeanされることを確認"""
-        data = np.array([[1.0, np.nan], [3.0, 10.0], [5.0, 20.0]])
-        result = DataLoader.demean(data)
-        # 列0: mean([1,3,5]) = 3 → [-2, 0, 2]
-        np.testing.assert_allclose(result[0, 0], -2.0, atol=1e-14)
-        np.testing.assert_allclose(result[1, 0], 0.0, atol=1e-14)
-        np.testing.assert_allclose(result[2, 0], 2.0, atol=1e-14)
-        # 列1: NaNは残り、mean([10,20])=15 → [NaN, -5, 5]
-        assert np.isnan(result[0, 1])
-        np.testing.assert_allclose(result[1, 1], -5.0, atol=1e-14)
-        np.testing.assert_allclose(result[2, 1], 5.0, atol=1e-14)
-
-    def test_does_not_modify_input(self) -> None:
-        """元のデータが変更されないことを確認"""
-        data = np.array([[1.0, 2.0], [3.0, 4.0]])
-        original = data.copy()
-        DataLoader.demean(data)
-        np.testing.assert_array_equal(data, original)
-
-
 class TestCSVRoundTrip:
     """CSV書き出し→読み込みのラウンドトリップテスト"""
 
@@ -172,12 +135,10 @@ class TestCSVRoundTrip:
             assert loaded.n_periods == synth.n_periods
             assert np.all(np.isfinite(loaded.data))
 
-            # dlog変数のスケールが一致することを確認（demean前 vs demean後の差を許容）
-            # loaded.data は demean 済みなので、元データも demean して比較
-            synth_demeaned = DataLoader.demean(synth.data)
+            # dlog変数のスケールが一致することを確認
             for j in range(loaded.n_obs):
                 std_loaded = np.std(loaded.data[:, j])
-                std_orig = np.std(synth_demeaned[:, j])
+                std_orig = np.std(synth.data[:, j])
                 if std_orig > 1e-10:
                     ratio = std_loaded / std_orig
                     assert 0.95 < ratio < 1.05, (

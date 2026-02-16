@@ -30,6 +30,7 @@ class StateSpaceMatrices:
         Q_cov: ショック共分散行列 (n_shock, n_shock)
         Z: 観測行列 (n_obs, n_aug)
         H: 測定誤差共分散行列 (n_obs, n_obs)
+        d: 観測方程式の定数項 (n_obs,)。定常状態の平均値。
         n_aug: 拡張状態次元
         n_obs: 観測変数数
         n_shock: ショック数
@@ -40,6 +41,7 @@ class StateSpaceMatrices:
     Q_cov: np.ndarray
     Z: np.ndarray
     H: np.ndarray
+    d: np.ndarray
     n_aug: int
     n_obs: int
     n_shock: int
@@ -102,6 +104,7 @@ class StateSpaceBuilder:
         solution: NKSolutionResult,
         shock_stds: np.ndarray,
         measurement_errors: np.ndarray,
+        steady_state_means: np.ndarray | None = None,
     ) -> StateSpaceMatrices:
         """NKモデル解から状態空間行列を構築する
 
@@ -110,6 +113,8 @@ class StateSpaceBuilder:
             shock_stds: ショック標準偏差 (6,) [σ_g, σ_a, σ_m, σ_i, σ_w, σ_p]
             measurement_errors: 測定誤差標準偏差 (7,)
                 [me_y, me_c, me_i, me_pi, me_w, me_n, me_r]
+            steady_state_means: 観測方程式の定常状態定数ベクトル (7,)
+                [γ, γ, γ, π*, γ, n*, r*]。Noneの場合はゼロベクトル（従来互換）。
 
         Returns:
             StateSpaceMatrices
@@ -124,6 +129,7 @@ class StateSpaceBuilder:
         Q_cov = cls._build_Q_cov(shock_stds)
         Z = cls._build_Z()
         H = cls._build_H(measurement_errors)
+        d = cls._build_d(steady_state_means)
 
         return StateSpaceMatrices(
             T=T,
@@ -131,6 +137,7 @@ class StateSpaceBuilder:
             Q_cov=Q_cov,
             Z=Z,
             H=H,
+            d=d,
             n_aug=cls.N_AUG,
             n_obs=cls.N_OBS,
             n_shock=cls.N_SHOCK,
@@ -296,3 +303,21 @@ class StateSpaceBuilder:
         H = diag(me_y², me_c², me_i², me_pi², me_w², me_n², me_r²)
         """
         return np.diag(measurement_errors**2)
+
+    @classmethod
+    def _build_d(cls, steady_state_means: np.ndarray | None) -> np.ndarray:
+        """観測方程式の定常状態定数ベクトル d (7,) を構築する
+
+        観測方程式: z_t = d + Z @ α_t + η_t
+
+        d = [γ, γ, γ, π*, γ, n*, r*] の形式。
+        Noneの場合はゼロベクトル。
+        """
+        if steady_state_means is None:
+            return np.zeros(cls.N_OBS)
+        d = np.asarray(steady_state_means, dtype=np.float64)
+        if d.shape != (cls.N_OBS,):
+            raise ValueError(
+                f"steady_state_meansのサイズが不正: {d.shape} != ({cls.N_OBS},)"
+            )
+        return d.copy()

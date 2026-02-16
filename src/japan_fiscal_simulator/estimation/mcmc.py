@@ -375,11 +375,16 @@ def make_log_posterior(
             # 測定誤差を抽出
             measurement_errors = mapping.theta_to_measurement_errors(theta)
 
+            # 定常状態の定数ベクトルを構築
+            steady_state_means = mapping.theta_to_steady_state_means(theta)
+
             # 状態空間行列を構築
-            ss = StateSpaceBuilder.build(solution, shock_stds, measurement_errors)
+            ss = StateSpaceBuilder.build(
+                solution, shock_stds, measurement_errors, steady_state_means
+            )
 
             # Kalmanフィルタで対数尤度を計算
-            result = kalman_filter(data_y, ss.T, ss.Z, ss.R_aug, ss.Q_cov, ss.H)
+            result = kalman_filter(data_y, ss.T, ss.Z, ss.R_aug, ss.Q_cov, ss.H, d=ss.d)
 
             ll = result.log_likelihood
             if not np.isfinite(ll):

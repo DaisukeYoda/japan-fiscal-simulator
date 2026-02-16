@@ -1,6 +1,6 @@
 [project]
 name = "jpfs"
-version = "0.1.0"
+version = "0.2.0"
 description = "Japan Fiscal Simulator - New Keynesian DSGEモデルによる財政政策分析"
 readme = "README.md"
 requires-python = ">=3.14"

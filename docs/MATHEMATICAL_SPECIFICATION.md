@@ -166,7 +166,7 @@ $$\bar{q} = 1, \qquad \bar{s} = 0.005, \qquad \bar{NW} = \frac{\bar{K}}{L_{ss}},
 
 ## 4. 対数線形化方程式
 
-全14方程式を以下に記述する。添字の慣例: $x_t$ は当期、$x_{t-1}$ はラグ、$\mathbb{E}_t[x_{t+1}]$ は期待値。
+全14方程式を以下に記述する。添字の慣例: $x_t$ は当期、$x_{t-1}$ はラグ、$\mathbb{E}_t[\cdot]$ は条件付き期待値。
 
 ---
 
@@ -371,11 +371,13 @@ $$y_t = \underbrace{(g_t, a_t, k_t, i_t, w_t}_{先決変数\ (n_s=5)},\ \underbr
 
 $2n$ 次元のcompanion形式を構築する：
 
-$$\underbrace{\begin{pmatrix} A & 0 \\ I_n & 0 \end{pmatrix}}_{F}
+$$
+\underbrace{\begin{pmatrix} A & 0 \\ I_n & 0 \end{pmatrix}}_{F}
 \begin{pmatrix} \mathbb{E}_t[y_{t+1}] \\ y_t \end{pmatrix}
 =
 \underbrace{\begin{pmatrix} -B & -C \\ I_n & 0 \end{pmatrix}}_{G}
-\begin{pmatrix} y_t \\ y_{t-1} \end{pmatrix}$$
+\begin{pmatrix} y_t \\ y_{t-1} \end{pmatrix}
+$$
 
 ### 6.2 QZ分解
 
@@ -445,21 +447,25 @@ $$\alpha_t = \mathcal{T} \cdot \alpha_{t-1} + \mathcal{R} \cdot \varepsilon_t, \
 
 遷移行列の構造：
 
-$$\mathcal{T} = \begin{pmatrix}
+$$
+\mathcal{T} = \begin{pmatrix}
 P & 0 & 0 \\
 R_{ctrl} P & 0 & 0 \\
 L_{shift} & 0 & 0
-\end{pmatrix}$$
+\end{pmatrix}
+$$
 
 ここで $R_{ctrl}$ は $R$ 行列から対応する制御変数行を抽出したもの、$L_{shift}$ はラグ変数のシフト演算子。
 
 ショック負荷行列：
 
-$$\mathcal{R} = \begin{pmatrix}
+$$
+\mathcal{R} = \begin{pmatrix}
 Q \\
 R_{ctrl} Q + S_{ctrl} \\
 0
-\end{pmatrix}$$
+\end{pmatrix}
+$$
 
 $S_{ctrl}$ は $S$ 行列から同時ショック効果を捕捉する。
 
@@ -534,7 +540,7 @@ $$\ln p(\theta \mid z_{1:T}) = \ln \mathcal{L}(\theta) + \ln p(\theta) + \text{c
 
 **第1段階: モード探索**
 
-$$\theta^* = \arg\min_\theta \left[-\ln p(\theta \mid z_{1:T})\right]$$
+$$\theta^{*} = \arg\min_\theta \left[-\ln p(\theta \mid z_{1:T})\right]$$
 
 L-BFGS-B法で解き、モードにおけるHessian $\mathcal{H}$ を有限差分で計算する。
 
@@ -656,7 +662,7 @@ $p > 0.05$ で収束と判定。
 
 ### 7.6 周辺尤度（Laplace近似）
 
-$$\ln p(z_{1:T}) \approx \ln p(z_{1:T} \mid \theta^*) + \ln p(\theta^*) + \frac{d}{2}\ln(2\pi) - \frac{1}{2}\ln|\mathcal{H}|$$
+$$\ln p(z_{1:T}) \approx \ln p(z_{1:T} \mid \theta^{*}) + \ln p(\theta^{*}) + \frac{d}{2}\ln(2\pi) - \frac{1}{2}\ln|\mathcal{H}|$$
 
 モデル比較のためのベイズファクター: $BF_{12} = p(z \mid M_1) / p(z \mid M_2)$
 
@@ -719,7 +725,7 @@ $$\ln p(z_{1:T}) \approx \ln p(z_{1:T} \mid \theta^*) + \ln p(\theta^*) + \frac{
 | $\rho_r$ | 金利平滑化 | 0.85 | 慣性パラメータ |
 | $\phi_\pi$ | インフレ反応 | 1.5 | Taylor原則 ($>1$) |
 | $\phi_y$ | 産出反応 | 0.125 | |
-| $\pi^*$ | インフレ目標 | 0.005 | 四半期（年率2%） |
+| $\pi^{*}$ | インフレ目標 | 0.005 | 四半期（年率2%） |
 | $\underline{R}$ | 名目金利下限 | -0.001 | マイナス金利 |
 
 ### 8.7 金融部門

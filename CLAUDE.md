@@ -93,8 +93,3 @@ This project follows Python best practices:
 ## PR and Commit guideline
 
 PRは日本語で行う。コミット文は簡潔に書く（多くても2-3行）。
-
-
-## Roadmap
-
-@docs/ROADMAP_CENTRAL_BANK_LEVEL.md

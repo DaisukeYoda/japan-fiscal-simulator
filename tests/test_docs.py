@@ -1,11 +1,11 @@
-"""ドキュメント（docs/guide/）のコード例が正しく動作するかを検証するテスト
+"""ドキュメント（docs/）のコード例が正しく動作するかを検証するテスト
 
 各テストクラスは対応するドキュメントファイルに対応する:
-- TestGettingStarted  → docs/guide/getting-started.md
-- TestPythonAPI       → docs/guide/python-api.md
-- TestCLI             → docs/guide/cli.md
-- TestEstimation      → docs/guide/estimation.md
-- TestMCP             → docs/guide/mcp.md
+- TestGettingStarted  → docs/getting-started.md
+- TestPythonAPI       → docs/python-api.md
+- TestCLI             → docs/cli.md
+- TestEstimation      → docs/estimation.md
+- TestMCP             → docs/mcp.md
 """
 
 import numpy as np
@@ -30,7 +30,7 @@ _skip_pydantic = pytest.mark.skipif(
 # getting-started.md
 # ============================================================
 class TestGettingStarted:
-    """docs/guide/getting-started.md のコード例を検証"""
+    """docs/getting-started.md のコード例を検証"""
 
     def test_import_and_model_init(self) -> None:
         import japan_fiscal_simulator as jpfs
@@ -82,7 +82,7 @@ class TestGettingStarted:
 # python-api.md
 # ============================================================
 class TestPythonAPI:
-    """docs/guide/python-api.md のコード例を検証"""
+    """docs/python-api.md のコード例を検証"""
 
     @pytest.fixture
     def model(self):
@@ -301,7 +301,7 @@ class TestPythonAPI:
 # ============================================================
 @_skip_pydantic
 class TestCLI:
-    """docs/guide/cli.md のコマンドを検証"""
+    """docs/cli.md のコマンドを検証"""
 
     @pytest.fixture(autouse=True)
     def _cli(self):
@@ -352,7 +352,7 @@ class TestCLI:
 # estimation.md
 # ============================================================
 class TestEstimation:
-    """docs/guide/estimation.md のコード例を検証"""
+    """docs/estimation.md のコード例を検証"""
 
     def test_mcmc_config(self) -> None:
         from japan_fiscal_simulator.estimation import MCMCConfig
@@ -547,7 +547,7 @@ class TestEstimation:
 # ============================================================
 @_skip_pydantic
 class TestMCP:
-    """docs/guide/mcp.md の記載ツールを検証"""
+    """docs/mcp.md の記載ツールを検証"""
 
     @pytest.fixture
     def context(self):

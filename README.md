@@ -88,6 +88,17 @@ Claude Desktopの設定ファイル（`claude_desktop_config.json`）に追加:
 }
 ```
 
+## ドキュメント
+
+| ドキュメント | 内容 |
+|------------|------|
+| [Getting Started](docs/getting-started.md) | インストールから最初のシミュレーションまで |
+| [CLI リファレンス](docs/cli.md) | 全コマンドの使い方とオプション |
+| [Python API](docs/python-api.md) | Pythonライブラリとしての利用方法 |
+| [ベイズ推定](docs/estimation.md) | MH-MCMCによるパラメータ推定 |
+| [MCP サーバー](docs/mcp.md) | Claude Desktopとの連携設定 |
+| [数理モデル仕様書](docs/MATHEMATICAL_SPECIFICATION.md) | 全14方程式・解法・推定手法の数学的記述 |
+
 ## モデル概要
 
 ### 家計部門

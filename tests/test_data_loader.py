@@ -141,9 +141,7 @@ class TestCSVRoundTrip:
                 std_orig = np.std(synth.data[:, j])
                 if std_orig > 1e-10:
                     ratio = std_loaded / std_orig
-                    assert 0.95 < ratio < 1.05, (
-                        f"変数{j}: std比={ratio:.2f} (期待: ~1.0)"
-                    )
+                    assert 0.95 < ratio < 1.05, f"変数{j}: std比={ratio:.2f} (期待: ~1.0)"
 
     def test_csv_header(self) -> None:
         """CSVヘッダーが正しいことを確認"""
@@ -159,7 +157,16 @@ class TestCSVRoundTrip:
             text = csv_path.read_text(encoding="utf-8")
             header = text.strip().split("\n")[0]
             # DataLoader互換のカラム名で出力される
-            expected_cols = ["date", "gdp", "consumption", "investment", "deflator", "wage", "employment", "rate"]
+            expected_cols = [
+                "date",
+                "gdp",
+                "consumption",
+                "investment",
+                "deflator",
+                "wage",
+                "employment",
+                "rate",
+            ]
             assert header == ",".join(expected_cols)
 
 

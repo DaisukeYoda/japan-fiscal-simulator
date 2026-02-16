@@ -46,10 +46,7 @@ class ISCurve:
     @property
     def description(self) -> str:
         if self.params.habit > 0:
-            return (
-                "y_t = h·y_{t-1} + (1-h)·E[y_{t+1}] "
-                "- σ_h^{-1}(r_t - E[π_{t+1}]) + g_y·g_t + a_t"
-            )
+            return "y_t = h·y_{t-1} + (1-h)·E[y_{t+1}] - σ_h^{-1}(r_t - E[π_{t+1}]) + g_y·g_t + a_t"
         return "y_t = E[y_{t+1}] - σ^{-1}(r_t - E[π_{t+1}]) + g_y·g_t + a_t"
 
     def coefficients(self) -> EquationCoefficients:

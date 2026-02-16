@@ -46,9 +46,7 @@ class TestBlanchardKahnSolver:
 
     def test_indeterminate_when_phi_pi_below_one(self) -> None:
         """phi_pi<1近傍で不定解が発生することを確認"""
-        params = DefaultParameters().with_updates(
-            central_bank=CentralBankParameters(phi_pi=0.8)
-        )
+        params = DefaultParameters().with_updates(central_bank=CentralBankParameters(phi_pi=0.8))
         model = NewKeynesianModel(params)
         matrices = model._build_system_matrices()
 

@@ -81,7 +81,7 @@ The model tracks 16 variables (defined in `VARIABLE_INDICES`):
 
 ## Python Version
 
-Requires Python 3.14+. Type annotations use modern syntax without `from __future__ import annotations`.
+Requires Python 3.13+. Type annotations use modern syntax without `from __future__ import annotations`.
 
 ## Coding Standards
 

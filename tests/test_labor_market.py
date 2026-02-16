@@ -97,15 +97,11 @@ class TestWagePhillipsCurve:
         denom = 1 + params.beta
         lambda_w = eq.lambda_w
         expected_w_sum = 1 + lambda_w / denom - params.beta / denom - 1 / denom
-        assert coef.w_current + coef.w_forward + coef.w_lag == pytest.approx(
-            expected_w_sum
-        )
+        assert coef.w_current + coef.w_forward + coef.w_lag == pytest.approx(expected_w_sum)
 
     def test_name_and_description(self) -> None:
         """名前と説明のテスト"""
-        params = WagePhillipsCurveParameters(
-            beta=0.99, theta_w=0.75, sigma=1.5, phi=2.0
-        )
+        params = WagePhillipsCurveParameters(beta=0.99, theta_w=0.75, sigma=1.5, phi=2.0)
         eq = WagePhillipsCurve(params)
 
         assert "Wage" in eq.name
@@ -113,9 +109,7 @@ class TestWagePhillipsCurve:
 
     def test_lambda_w_property(self) -> None:
         """λ_w プロパティのテスト"""
-        params = WagePhillipsCurveParameters(
-            beta=0.99, theta_w=0.75, sigma=1.5, phi=2.0
-        )
+        params = WagePhillipsCurveParameters(beta=0.99, theta_w=0.75, sigma=1.5, phi=2.0)
         eq = WagePhillipsCurve(params)
 
         expected = compute_wage_adjustment_speed(0.99, 0.75)

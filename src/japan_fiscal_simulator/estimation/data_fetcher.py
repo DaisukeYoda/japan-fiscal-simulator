@@ -129,9 +129,7 @@ class SyntheticDataGenerator:
             path: 出力先ファイルパス
         """
         filepath = Path(path)
-        csv_col_names = [
-            DataLoader._COLUMN_MAP.get(name, name) for name in data.variable_names
-        ]
+        csv_col_names = [DataLoader._COLUMN_MAP.get(name, name) for name in data.variable_names]
 
         has_dlog = any(obs.transform == "dlog" for obs in self.observables)
 

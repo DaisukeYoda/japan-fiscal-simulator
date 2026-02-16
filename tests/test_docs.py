@@ -234,9 +234,7 @@ class TestPythonAPI:
         assert hasattr(analysis, "welfare_effect")
 
         # カスタムシナリオ
-        scenario = ConsumptionTaxPolicy.create_reduction_scenario(
-            reduction_rate=0.03, periods=40
-        )
+        scenario = ConsumptionTaxPolicy.create_reduction_scenario(reduction_rate=0.03, periods=40)
         analysis2 = policy.analyze(scenario)
         assert isinstance(analysis2.output_effect_peak, float)
 
@@ -286,8 +284,22 @@ class TestPythonAPI:
         from japan_fiscal_simulator.core.model import SHOCK_VARS, VARIABLE_INDICES
 
         expected_vars = [
-            "y", "c", "i", "n", "k", "pi", "r", "R",
-            "w", "mc", "g", "b", "tau_c", "a", "q", "rk",
+            "y",
+            "c",
+            "i",
+            "n",
+            "k",
+            "pi",
+            "r",
+            "R",
+            "w",
+            "mc",
+            "g",
+            "b",
+            "tau_c",
+            "a",
+            "q",
+            "rk",
         ]
         for var in expected_vars:
             assert var in VARIABLE_INDICES, f"{var} not in VARIABLE_INDICES"
@@ -532,7 +544,16 @@ class TestEstimation:
             with open(csv_path) as f:
                 reader = csv.reader(f)
                 headers = next(reader)
-            expected = {"date", "gdp", "consumption", "investment", "deflator", "wage", "employment", "rate"}
+            expected = {
+                "date",
+                "gdp",
+                "consumption",
+                "investment",
+                "deflator",
+                "wage",
+                "employment",
+                "rate",
+            }
             assert expected == set(headers), f"CSV headers mismatch: {headers}"
 
             # CSVを読み込めることを検証

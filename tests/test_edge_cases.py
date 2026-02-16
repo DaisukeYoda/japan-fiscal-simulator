@@ -32,23 +32,17 @@ class TestShockValidation:
         with pytest.raises(ShockValidationError):
             simulator.simulate("invalid_shock", 0.01)
 
-    def test_shock_size_exceeds_max_raises_error(
-        self, simulator: ImpulseResponseSimulator
-    ) -> None:
+    def test_shock_size_exceeds_max_raises_error(self, simulator: ImpulseResponseSimulator) -> None:
         """ショックサイズが最大値を超えるとShockValidationErrorを発生させる"""
         with pytest.raises(ShockValidationError):
             simulator.simulate("e_g", 0.51)
 
-    def test_negative_shock_at_boundary_works(
-        self, simulator: ImpulseResponseSimulator
-    ) -> None:
+    def test_negative_shock_at_boundary_works(self, simulator: ImpulseResponseSimulator) -> None:
         """負のショックサイズが境界値（abs=0.50）で正常動作する"""
         result = simulator.simulate("e_g", -0.50)
         assert result.shock_size == -0.50
 
-    def test_positive_shock_at_boundary_works(
-        self, simulator: ImpulseResponseSimulator
-    ) -> None:
+    def test_positive_shock_at_boundary_works(self, simulator: ImpulseResponseSimulator) -> None:
         """正のショックサイズが境界値（0.50）で正常動作する"""
         result = simulator.simulate("e_g", 0.50)
         assert result.shock_size == 0.50

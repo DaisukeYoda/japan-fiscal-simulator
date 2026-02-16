@@ -12,9 +12,13 @@ keywords = ["dsge", "fiscal-policy", "economics", "japan", "simulation"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
-    "Topic :: Scientific/Engineering :: Mathematics",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: Japanese",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering :: Mathematics",
 ]
 
 dependencies = [
@@ -28,6 +32,12 @@ dependencies = [
     "jinja2>=3.1.0",
     "pandas>=2.0.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/DaisukeYoda/japan-fiscal-simulator"
+Repository = "https://github.com/DaisukeYoda/japan-fiscal-simulator"
+Documentation = "https://github.com/DaisukeYoda/japan-fiscal-simulator/tree/main/docs"
+Issues = "https://github.com/DaisukeYoda/japan-fiscal-simulator/issues"
 
 [project.optional-dependencies]
 dev = [
@@ -66,6 +76,10 @@ select = [
 ignore = [
     "E501",   # line-length (handled by formatter)
 ]
+
+[tool.ruff.lint.per-file-ignores]
+"src/japan_fiscal_simulator/__init__.py" = ["E402"]
+"tests/**" = ["PLC0415"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["japan_fiscal_simulator"]

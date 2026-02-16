@@ -151,9 +151,7 @@ class NewKeynesianModel:
 
         total = c_share + i_share + g_share
         if abs(total - 1.0) > 1e-8:
-            raise ValidationError(
-                f"資源制約シェアの合計が1から乖離しています: total={total:.10f}"
-            )
+            raise ValidationError(f"資源制約シェアの合計が1から乖離しています: total={total:.10f}")
 
         return c_share, i_share, g_share
 
@@ -215,9 +213,7 @@ class NewKeynesianModel:
         ]
 
         if len(equations) != self.vars.n_total:
-            raise ValidationError(
-                f"方程式数が不一致です: {len(equations)} != {self.vars.n_total}"
-            )
+            raise ValidationError(f"方程式数が不一致です: {len(equations)} != {self.vars.n_total}")
 
         return equations
 

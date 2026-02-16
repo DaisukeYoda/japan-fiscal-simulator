@@ -12,10 +12,20 @@ keywords = ["dsge", "fiscal-policy", "economics", "japan", "simulation"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
-    "Topic :: Scientific/Engineering :: Mathematics",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: Japanese",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering :: Mathematics",
 ]
+
+[project.urls]
+Homepage = "https://github.com/DaisukeYoda/japan-fiscal-simulator"
+Repository = "https://github.com/DaisukeYoda/japan-fiscal-simulator"
+Documentation = "https://github.com/DaisukeYoda/japan-fiscal-simulator/tree/main/docs"
+Issues = "https://github.com/DaisukeYoda/japan-fiscal-simulator/issues"
 
 dependencies = [
     "numpy>=1.24.0",

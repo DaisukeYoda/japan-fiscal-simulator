@@ -2,7 +2,7 @@
 
 import pytest
 
-# pydantic が Python 3.14 と互換性がない場合、output.schemas のインポートが失敗する。
+# pydantic が現在のPython実行環境と互換性がない場合、output.schemas のインポートが失敗する。
 # CLI/MCPテストはこのモジュールチェーンに依存するため、インポート不可時はスキップする。
 try:
     from japan_fiscal_simulator.output.schemas import VariableTimeSeries  # noqa: F401

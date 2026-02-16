@@ -1,7 +1,7 @@
 # jpfs - Japan Fiscal Simulator
 
 [![PyPI version](https://badge.fury.io/py/jpfs.svg)](https://pypi.org/project/jpfs/)
-[![Python 3.14+](https://img.shields.io/badge/python-3.14+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.13+](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 消費税減税・社会保障費増額・補助金政策などの財政政策が日本経済に与える影響をシミュレートするツール。Smets-Wouters級の中規模New Keynesian DSGEモデルをPythonでフルスクラッチ実装。

@@ -342,7 +342,7 @@ class BlanchardKahnSolver:
         A_1: np.ndarray,  # y_{t-1} の係数
         B: np.ndarray,  # ショック係数
         n_predetermined: int,
-    ) -> BlanchardKahnSolver:
+    ) -> "BlanchardKahnSolver":
         """モデル行列から直接ソルバーを構築"""
         return BlanchardKahnSolver(
             A=A1,

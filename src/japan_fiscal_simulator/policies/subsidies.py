@@ -16,7 +16,7 @@ class SubsidyAnalysis:
     """補助金政策の分析結果"""
 
     scenario: PolicyScenario
-    impulse_response: ImpulseResponseResult
+    impulse_response: "ImpulseResponseResult"
     output_effect_peak: float
     investment_effect_peak: float
     fiscal_cost: float
@@ -34,7 +34,7 @@ class SubsidyPolicy:
     本モデルでは政府支出を通じた効果として近似
     """
 
-    def __init__(self, model: DSGEModel) -> None:
+    def __init__(self, model: "DSGEModel") -> None:
         self.model = model
 
     @staticmethod

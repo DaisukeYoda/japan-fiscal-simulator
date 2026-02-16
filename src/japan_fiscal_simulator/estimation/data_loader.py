@@ -63,7 +63,7 @@ class EstimationData:
         cls,
         path: str | Path,
         observables: list[ObservableDefinition] | None = None,
-    ) -> EstimationData:
+    ) -> "EstimationData":
         """CSVファイルから推定データを構築する
 
         Args:
@@ -223,4 +223,3 @@ class DataLoader:
         trend = spla.spsolve(A, series)
         cycle = series - trend
         return trend, cycle
-

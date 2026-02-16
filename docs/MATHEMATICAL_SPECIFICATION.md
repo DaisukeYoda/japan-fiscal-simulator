@@ -80,7 +80,9 @@ Japan Fiscal Simulator (jpfs) — New Keynesian DSGEモデル
 
 ### 2.2 構造ショック
 
-$$\varepsilon_t = (e_{g,t},\ e_{a,t},\ e_{m,t},\ e_{i,t},\ e_{w,t},\ e_{p,t})^\top$$
+```math
+\varepsilon_t = (e_{g,t},\ e_{a,t},\ e_{m,t},\ e_{i,t},\ e_{w,t},\ e_{p,t})^\top
+```
 
 | 記号 | ショック名 | 持続性 $\rho$ | 標準偏差 $\sigma$ |
 |------|-----------|-------------|-----------------|
@@ -108,47 +110,69 @@ $$\varepsilon_t = (e_{g,t},\ e_{a,t},\ e_{m,t},\ e_{i,t},\ e_{w,t},\ e_{p,t})^\t
 
 **(1) 実質金利**（オイラー方程式 $\beta(1+\bar{r})=1$ より）
 
-$$\bar{r} = \frac{1}{\beta} - 1$$
+```math
+\bar{r} = \frac{1}{\beta} - 1
+```
 
 **(2) インフレ率**
 
-$$\bar{\pi} = \pi^{*} \quad (\text{中央銀行目標})$$
+```math
+\bar{\pi} = \pi^{*} \quad (\text{中央銀行目標})
+```
 
 **(3) 名目金利**（Fisher方程式）
 
-$$\bar{R} = \bar{r} + \bar{\pi}$$
+```math
+\bar{R} = \bar{r} + \bar{\pi}
+```
 
 **(4) マークアップと限界費用**
 
-$$\mu = \frac{\epsilon}{\epsilon - 1}, \qquad \overline{mc} = \frac{1}{\mu} = \frac{\epsilon - 1}{\epsilon}$$
+```math
+\mu = \frac{\epsilon}{\epsilon - 1}, \qquad \overline{mc} = \frac{1}{\mu} = \frac{\epsilon - 1}{\epsilon}
+```
 
 **(5) 資本の限界生産性と資本・産出比率**
 
-$$MPK = \bar{r} + \delta, \qquad \frac{\bar{K}}{\bar{Y}} = \frac{\alpha}{MPK}$$
+```math
+MPK = \bar{r} + \delta, \qquad \frac{\bar{K}}{\bar{Y}} = \frac{\alpha}{MPK}
+```
 
 **(6) 投資・消費の産出比率**（資源制約 $\bar{Y} = \bar{C} + \bar{I} + \bar{G}$ より）
 
-$$\frac{\bar{I}}{\bar{Y}} = \delta \cdot \frac{\bar{K}}{\bar{Y}}, \qquad \frac{\bar{C}}{\bar{Y}} = 1 - \frac{\bar{I}}{\bar{Y}} - \frac{\bar{G}}{\bar{Y}}$$
+```math
+\frac{\bar{I}}{\bar{Y}} = \delta \cdot \frac{\bar{K}}{\bar{Y}}, \qquad \frac{\bar{C}}{\bar{Y}} = 1 - \frac{\bar{I}}{\bar{Y}} - \frac{\bar{G}}{\bar{Y}}
+```
 
 **(7) 水準値**（$\bar{Y}=1$ で正規化）
 
-$$\bar{Y} = 1, \quad \bar{C} = \frac{\bar{C}}{\bar{Y}}, \quad \bar{I} = \frac{\bar{I}}{\bar{Y}}, \quad \bar{K} = \frac{\bar{K}}{\bar{Y}}, \quad \bar{G} = g_y \cdot \bar{Y}$$
+```math
+\bar{Y} = 1, \quad \bar{C} = \frac{\bar{C}}{\bar{Y}}, \quad \bar{I} = \frac{\bar{I}}{\bar{Y}}, \quad \bar{K} = \frac{\bar{K}}{\bar{Y}}, \quad \bar{G} = g_y \cdot \bar{Y}
+```
 
 **(8) 労働**（Cobb-Douglas生産関数 $Y = K^\alpha N^{1-\alpha}$ より）
 
-$$\bar{N} = \left(\frac{\bar{Y}}{\bar{K}^\alpha}\right)^{1/(1-\alpha)}$$
+```math
+\bar{N} = \left(\frac{\bar{Y}}{\bar{K}^\alpha}\right)^{1/(1-\alpha)}
+```
 
 **(9) 実質賃金**（労働の限界生産性条件）
 
-$$\bar{w} = \overline{mc} \cdot (1-\alpha) \cdot \frac{\bar{Y}}{\bar{N}}$$
+```math
+\bar{w} = \overline{mc} \cdot (1-\alpha) \cdot \frac{\bar{Y}}{\bar{N}}
+```
 
 **(10) 財政変数**
 
-$$\bar{T} = \tau_c \bar{C} + \tau_l \bar{w}\bar{N} + \tau_k \bar{r}\bar{K}, \qquad \bar{B} = b_y \cdot \bar{Y}$$
+```math
+\bar{T} = \tau_c \bar{C} + \tau_l \bar{w}\bar{N} + \tau_k \bar{r}\bar{K}, \qquad \bar{B} = b_y \cdot \bar{Y}
+```
 
 **(11) 金融変数**
 
-$$\bar{q} = 1, \qquad \bar{s} = 0.005, \qquad \bar{NW} = \frac{\bar{K}}{L_{ss}}, \qquad \bar{r}^k = \bar{r} + \bar{s}$$
+```math
+\bar{q} = 1, \qquad \bar{s} = 0.005, \qquad \bar{NW} = \frac{\bar{K}}{L_{ss}}, \qquad \bar{r}^k = \bar{r} + \bar{s}
+```
 
 ### 3.2 デフォルトキャリブレーションでの定常状態値
 
@@ -166,17 +190,21 @@ $$\bar{q} = 1, \qquad \bar{s} = 0.005, \qquad \bar{NW} = \frac{\bar{K}}{L_{ss}},
 
 ## 4. 対数線形化方程式
 
-全14方程式を以下に記述する。添字の慣例: $x_t$ は当期、$x_{t-1}$ はラグ、$\mathbb{E}_t[x_{t+1}]$ は期待値。
+全14方程式を以下に記述する。添字の慣例: $x_t$ は当期、$x_{t-1}$ はラグ、$\mathbb{E}_t[\cdot]$ は条件付き期待値。
 
 ---
 
 ### 方程式 1: IS曲線（習慣形成付き）
 
-$$y_t = h \cdot y_{t-1} + (1-h) \cdot \mathbb{E}_t[y_{t+1}] - \tilde{\sigma}^{-1}\bigl(r_t - \mathbb{E}_t[\pi_{t+1}]\bigr) + g_y \cdot g_t + a_t$$
+```math
+y_t = h \cdot y_{t-1} + (1-h) \cdot \mathbb{E}_t[y_{t+1}] - \tilde{\sigma}^{-1}\bigl(r_t - \mathbb{E}_t[\pi_{t+1}]\bigr) + g_y \cdot g_t + a_t
+```
 
 ここで $\tilde{\sigma}$ は習慣形成調整済み異時点間代替弾力性：
 
-$$\tilde{\sigma} = \frac{\sigma(1-h)}{1+h}$$
+```math
+\tilde{\sigma} = \frac{\sigma(1-h)}{1+h}
+```
 
 | 係数 | 式 | デフォルト値 |
 |------|-----|-----------|
@@ -189,9 +217,13 @@ $$\tilde{\sigma} = \frac{\sigma(1-h)}{1+h}$$
 
 ### 方程式 2: 価格 Phillips 曲線（インデクセーション付き）
 
-$$\pi_t = \frac{\iota_p}{1+\beta\iota_p}\pi_{t-1} + \frac{\beta}{1+\beta\iota_p}\mathbb{E}_t[\pi_{t+1}] + \kappa \cdot mc_t + \frac{1}{1 - \frac{\beta}{1+\beta\iota_p}\rho_p} \cdot e_{p,t}$$
+```math
+\pi_t = \frac{\iota_p}{1+\beta\iota_p}\pi_{t-1} + \frac{\beta}{1+\beta\iota_p}\mathbb{E}_t[\pi_{t+1}] + \kappa \cdot mc_t + \frac{1}{1 - \frac{\beta}{1+\beta\iota_p}\rho_p} \cdot e_{p,t}
+```
 
-$$\kappa = \frac{(1-\theta)(1-\beta\theta)}{\theta(1+\beta\iota_p)}$$
+```math
+\kappa = \frac{(1-\theta)(1-\beta\theta)}{\theta(1+\beta\iota_p)}
+```
 
 ショック $e_{p,t}$ の係数はAR(1)持続性 $\rho_p$ を通じた期待項の影響をスケーリングしている。
 
@@ -206,9 +238,13 @@ $$\kappa = \frac{(1-\theta)(1-\beta\theta)}{\theta(1+\beta\iota_p)}$$
 
 ### 方程式 3: 賃金 Phillips 曲線（Calvo型賃金硬直性）
 
-$$w_t = \frac{\beta}{1+\beta}\mathbb{E}_t[w_{t+1}] + \frac{1}{1+\beta}w_{t-1} + \frac{\lambda_w}{1+\beta}(mrs_t - w_t) + e_{w,t}$$
+```math
+w_t = \frac{\beta}{1+\beta}\mathbb{E}_t[w_{t+1}] + \frac{1}{1+\beta}w_{t-1} + \frac{\lambda_w}{1+\beta}(mrs_t - w_t) + e_{w,t}
+```
 
-$$\lambda_w = \frac{(1-\theta_w)(1-\beta\theta_w)}{\theta_w}$$
+```math
+\lambda_w = \frac{(1-\theta_w)(1-\beta\theta_w)}{\theta_w}
+```
 
 | 係数 | 式 | デフォルト値 |
 |------|-----|-----------|
@@ -220,7 +256,9 @@ $$\lambda_w = \frac{(1-\theta_w)(1-\beta\theta_w)}{\theta_w}$$
 
 ### 方程式 4: Taylor則（金融政策）
 
-$$r_t = \phi_\pi \cdot \pi_t + \phi_y \cdot y_t + e_{m,t}$$
+```math
+r_t = \phi_\pi \cdot \pi_t + \phi_y \cdot y_t + e_{m,t}
+```
 
 | 係数 | デフォルト値 |
 |------|-----------|
@@ -231,19 +269,25 @@ $$r_t = \phi_\pi \cdot \pi_t + \phi_y \cdot y_t + e_{m,t}$$
 
 ### 方程式 5: 限界費用
 
-$$mc_t = \alpha \cdot r^k_t + (1-\alpha) \cdot w_t - a_t$$
+```math
+mc_t = \alpha \cdot r^k_t + (1-\alpha) \cdot w_t - a_t
+```
 
 ---
 
 ### 方程式 6: 資本蓄積
 
-$$k_t = (1-\delta) \cdot k_{t-1} + \delta \cdot i_t$$
+```math
+k_t = (1-\delta) \cdot k_{t-1} + \delta \cdot i_t
+```
 
 ---
 
 ### 方程式 7: 投資調整コスト
 
-$$i_t = i_{t-1} + \frac{1}{S''} \cdot q_t + e_{i,t}$$
+```math
+i_t = i_{t-1} + \frac{1}{S''} \cdot q_t + e_{i,t}
+```
 
 ここで $S''$ は調整コスト関数の曲率。$S'' \to \infty$ で投資は完全に非弾力的。
 
@@ -251,47 +295,63 @@ $$i_t = i_{t-1} + \frac{1}{S''} \cdot q_t + e_{i,t}$$
 
 ### 方程式 8: Tobin の Q（資産価格）
 
-$$q_t = \beta(1-\delta)\mathbb{E}_t[q_{t+1}] + \beta \cdot \mathbb{E}_t[r^k_{t+1}] - r_t$$
+```math
+q_t = \beta(1-\delta)\mathbb{E}_t[q_{t+1}] + \beta \cdot \mathbb{E}_t[r^k_{t+1}] - r_t
+```
 
 ---
 
 ### 方程式 9: 資本レンタル率（資本の限界生産性）
 
-$$r^k_t = y_t - k_{t-1}$$
+```math
+r^k_t = y_t - k_{t-1}
+```
 
 ---
 
 ### 方程式 10: 労働需要（生産関数の逆関数）
 
-$$n_t = \frac{1}{1-\alpha}(y_t - a_t) - \frac{\alpha}{1-\alpha}k_{t-1}$$
+```math
+n_t = \frac{1}{1-\alpha}(y_t - a_t) - \frac{\alpha}{1-\alpha}k_{t-1}
+```
 
 ---
 
 ### 方程式 11: 資源制約
 
-$$y_t = s_c \cdot c_t + s_i \cdot i_t + s_g \cdot g_t$$
+```math
+y_t = s_c \cdot c_t + s_i \cdot i_t + s_g \cdot g_t
+```
 
 ここで $s_c, s_i, s_g$ は定常状態の支出シェア：
 
-$$s_c = \frac{\bar{C}}{\bar{Y}}, \quad s_i = \frac{\bar{I}}{\bar{Y}}, \quad s_g = \frac{\bar{G}}{\bar{Y}}$$
+```math
+s_c = \frac{\bar{C}}{\bar{Y}}, \quad s_i = \frac{\bar{I}}{\bar{Y}}, \quad s_g = \frac{\bar{G}}{\bar{Y}}
+```
 
 ---
 
 ### 方程式 12: 限界代替率（家計の最適条件）
 
-$$mrs_t = \sigma \cdot c_t + \phi \cdot n_t$$
+```math
+mrs_t = \sigma \cdot c_t + \phi \cdot n_t
+```
 
 ---
 
 ### 方程式 13: 政府支出過程（AR(1)）
 
-$$g_t = \rho_g \cdot g_{t-1} + e_{g,t}$$
+```math
+g_t = \rho_g \cdot g_{t-1} + e_{g,t}
+```
 
 ---
 
 ### 方程式 14: 技術過程（AR(1)）
 
-$$a_t = \rho_a \cdot a_{t-1} + e_{a,t}$$
+```math
+a_t = \rho_a \cdot a_{t-1} + e_{a,t}
+```
 
 ---
 
@@ -301,7 +361,9 @@ $$a_t = \rho_a \cdot a_{t-1} + e_{a,t}$$
 
 14方程式をベクトル形式で記述する：
 
-$$A \cdot \mathbb{E}_t[y_{t+1}] + B \cdot y_t + C \cdot y_{t-1} + D \cdot \varepsilon_t = 0$$
+```math
+A \cdot \mathbb{E}_t[y_{t+1}] + B \cdot y_t + C \cdot y_{t-1} + D \cdot \varepsilon_t = 0
+```
 
 ここで：
 
@@ -314,7 +376,9 @@ $$A \cdot \mathbb{E}_t[y_{t+1}] + B \cdot y_t + C \cdot y_{t-1} + D \cdot \varep
 
 ### 5.2 変数の順序
 
-$$y_t = \underbrace{(g_t, a_t, k_t, i_t, w_t}_{先決変数\ (n_s=5)},\ \underbrace{y_t, \pi_t, r_t, q_t, r^k_t, n_t, c_t, mc_t, mrs_t)}_{制御変数\ (n_c=9)}$$
+```math
+y_t = \underbrace{(g_t, a_t, k_t, i_t, w_t}_{先決変数\ (n_s=5)},\ \underbrace{y_t, \pi_t, r_t, q_t, r^k_t, n_t, c_t, mc_t, mrs_t)}_{制御変数\ (n_c=9)}
+```
 
 ### 5.3 行列の構造
 
@@ -371,17 +435,21 @@ $$y_t = \underbrace{(g_t, a_t, k_t, i_t, w_t}_{先決変数\ (n_s=5)},\ \underbr
 
 $2n$ 次元のcompanion形式を構築する：
 
-$$\underbrace{\begin{pmatrix} A & 0 \\ I_n & 0 \end{pmatrix}}_{F}
+```math
+\underbrace{\begin{pmatrix} A & 0 \\ I_n & 0 \end{pmatrix}}_{F}
 \begin{pmatrix} \mathbb{E}_t[y_{t+1}] \\ y_t \end{pmatrix}
 =
 \underbrace{\begin{pmatrix} -B & -C \\ I_n & 0 \end{pmatrix}}_{G}
-\begin{pmatrix} y_t \\ y_{t-1} \end{pmatrix}$$
+\begin{pmatrix} y_t \\ y_{t-1} \end{pmatrix}
+```
 
 ### 6.2 QZ分解
 
 一般化Schur分解（`scipy.linalg.ordqz`）を適用する：
 
-$$G = Q \cdot S \cdot Z^H, \qquad F = Q \cdot T \cdot Z^H$$
+```math
+G = Q \cdot S \cdot Z^H, \qquad F = Q \cdot T \cdot Z^H
+```
 
 固有値は $\lambda_i = S_{ii} / T_{ii}$ として計算され、$|\lambda_i| < 1$（安定）と $|\lambda_i| > 1$（不安定）に分類される。
 
@@ -389,7 +457,9 @@ $$G = Q \cdot S \cdot Z^H, \qquad F = Q \cdot T \cdot Z^H$$
 
 一意の有界解が存在する必要十分条件：
 
-$$n_{unstable} = n_{forward}$$
+```math
+n_{unstable} = n_{forward}
+```
 
 本実装では $n_{forward} = \text{rank}(A)$ として計算する。行列 $A$ の非ゼロ行は4行（賃金Phillips・IS曲線・価格Phillips・Tobin's Q）であり、$\text{rank}(A) = 4$ となる。これは14個の方程式のうち前方期待項を含む方程式が4本であることに対応する。
 
@@ -400,8 +470,12 @@ $$n_{unstable} = n_{forward}$$
 
 BK条件が満たされたのち、解の形式を求める：
 
-$$s_t = P \cdot s_{t-1} + Q \cdot \varepsilon_t$$
-$$c_t = R \cdot s_t + S \cdot \varepsilon_t$$
+```math
+s_t = P \cdot s_{t-1} + Q \cdot \varepsilon_t
+```
+```math
+c_t = R \cdot s_t + S \cdot \varepsilon_t
+```
 
 ここで $P \in \mathbb{R}^{5 \times 5}$, $Q \in \mathbb{R}^{5 \times 6}$, $R \in \mathbb{R}^{9 \times 5}$, $S \in \mathbb{R}^{9 \times 6}$。
 
@@ -409,7 +483,9 @@ $$c_t = R \cdot s_t + S \cdot \varepsilon_t$$
 
 $F = (I_{n_s}^\top, R^\top)^\top$ と定義し、以下を満たす $P, R$ を求める：
 
-$$A \cdot F \cdot P^2 + B \cdot F \cdot P + C \cdot F = 0$$
+```math
+A \cdot F \cdot P^2 + B \cdot F \cdot P + C \cdot F = 0
+```
 
 この $14 \times 5$ の行列方程式は $n_s^2 + n_c \cdot n_s = 70$ 個の未知数に対する非線形方程式系であり、`scipy.optimize.root`（hybr法）で数値解を得る。収束しない場合は `least_squares`（dogbox法）にフォールバックする。
 
@@ -419,7 +495,9 @@ $$A \cdot F \cdot P^2 + B \cdot F \cdot P + C \cdot F = 0$$
 
 $P, R$ が求まったのち、$Q, S$ は以下の線形方程式から得られる：
 
-$$(A \cdot F \cdot P + B \cdot F) \cdot Q + B_c \cdot S + D = 0$$
+```math
+(A \cdot F \cdot P + B \cdot F) \cdot Q + B_c \cdot S + D = 0
+```
 
 ここで $B_c = B[:, n_s:]$ は $B$ 行列の制御変数に対応する列ブロック。$14 \times 14$ の連立方程式を `np.linalg.solve` で解く。
 
@@ -433,11 +511,15 @@ Blanchard-Kahn解を拡張状態空間形式に変換する。
 
 #### 拡張状態ベクトル
 
-$$\alpha_t = \underbrace{(s_t}_{5},\ \underbrace{y_t, c_t, \pi_t, n_t, r_t}_{補助制御5},\ \underbrace{y_{t-1}, c_{t-1}, i_{t-1}, w_{t-1}}_{ラグ4})^\top \in \mathbb{R}^{14}$$
+```math
+\alpha_t = \underbrace{(s_t}_{5},\ \underbrace{y_t, c_t, \pi_t, n_t, r_t}_{補助制御5},\ \underbrace{y_{t-1}, c_{t-1}, i_{t-1}, w_{t-1}}_{ラグ4})^\top \in \mathbb{R}^{14}
+```
 
 #### 状態遷移方程式
 
-$$\alpha_t = \mathcal{T} \cdot \alpha_{t-1} + \mathcal{R} \cdot \varepsilon_t, \qquad \varepsilon_t \sim \mathcal{N}(0, \Sigma_\varepsilon)$$
+```math
+\alpha_t = \mathcal{T} \cdot \alpha_{t-1} + \mathcal{R} \cdot \varepsilon_t, \qquad \varepsilon_t \sim \mathcal{N}(0, \Sigma_\varepsilon)
+```
 
 - $\mathcal{T} \in \mathbb{R}^{14 \times 14}$: 遷移行列
 - $\mathcal{R} \in \mathbb{R}^{14 \times 6}$: ショック負荷行列
@@ -445,27 +527,33 @@ $$\alpha_t = \mathcal{T} \cdot \alpha_{t-1} + \mathcal{R} \cdot \varepsilon_t, \
 
 遷移行列の構造：
 
-$$\mathcal{T} = \begin{pmatrix}
+```math
+\mathcal{T} = \begin{pmatrix}
 P & 0 & 0 \\
 R_{ctrl} P & 0 & 0 \\
 L_{shift} & 0 & 0
-\end{pmatrix}$$
+\end{pmatrix}
+```
 
 ここで $R_{ctrl}$ は $R$ 行列から対応する制御変数行を抽出したもの、$L_{shift}$ はラグ変数のシフト演算子。
 
 ショック負荷行列：
 
-$$\mathcal{R} = \begin{pmatrix}
+```math
+\mathcal{R} = \begin{pmatrix}
 Q \\
 R_{ctrl} Q + S_{ctrl} \\
 0
-\end{pmatrix}$$
+\end{pmatrix}
+```
 
 $S_{ctrl}$ は $S$ 行列から同時ショック効果を捕捉する。
 
 #### 観測方程式
 
-$$z_t = \mathcal{Z} \cdot \alpha_t + \eta_t, \qquad \eta_t \sim \mathcal{N}(0, H)$$
+```math
+z_t = \mathcal{Z} \cdot \alpha_t + \eta_t, \qquad \eta_t \sim \mathcal{N}(0, H)
+```
 
 - $z_t \in \mathbb{R}^7$: 観測ベクトル
 - $\mathcal{Z} \in \mathbb{R}^{7 \times 14}$: 観測行列
@@ -489,22 +577,40 @@ $$z_t = \mathcal{Z} \cdot \alpha_t + \eta_t, \qquad \eta_t \sim \mathcal{N}(0, H
 
 #### 予測ステップ
 
-$$\hat{\alpha}_{t|t-1} = \mathcal{T} \cdot \hat{\alpha}_{t-1|t-1}$$
-$$P_{t|t-1} = \mathcal{T} \cdot P_{t-1|t-1} \cdot \mathcal{T}^\top + \mathcal{R} \cdot \Sigma_\varepsilon \cdot \mathcal{R}^\top$$
+```math
+\hat{\alpha}_{t|t-1} = \mathcal{T} \cdot \hat{\alpha}_{t-1|t-1}
+```
+```math
+P_{t|t-1} = \mathcal{T} \cdot P_{t-1|t-1} \cdot \mathcal{T}^\top + \mathcal{R} \cdot \Sigma_\varepsilon \cdot \mathcal{R}^\top
+```
 
 #### 更新ステップ
 
-$$v_t = z_t - \mathcal{Z} \cdot \hat{\alpha}_{t|t-1} \qquad (\text{イノベーション})$$
-$$F_t = \mathcal{Z} \cdot P_{t|t-1} \cdot \mathcal{Z}^\top + H \qquad (\text{イノベーション共分散})$$
-$$K_t = P_{t|t-1} \cdot \mathcal{Z}^\top \cdot F_t^{-1} \qquad (\text{カルマンゲイン})$$
-$$\hat{\alpha}_{t|t} = \hat{\alpha}_{t|t-1} + K_t \cdot v_t$$
-$$P_{t|t} = P_{t|t-1} - K_t \cdot \mathcal{Z} \cdot P_{t|t-1}$$
+```math
+v_t = z_t - \mathcal{Z} \cdot \hat{\alpha}_{t|t-1} \qquad (\text{イノベーション})
+```
+```math
+F_t = \mathcal{Z} \cdot P_{t|t-1} \cdot \mathcal{Z}^\top + H \qquad (\text{イノベーション共分散})
+```
+```math
+K_t = P_{t|t-1} \cdot \mathcal{Z}^\top \cdot F_t^{-1} \qquad (\text{カルマンゲイン})
+```
+```math
+\hat{\alpha}_{t|t} = \hat{\alpha}_{t|t-1} + K_t \cdot v_t
+```
+```math
+P_{t|t} = P_{t|t-1} - K_t \cdot \mathcal{Z} \cdot P_{t|t-1}
+```
 
 #### 対数尤度
 
-$$\ln \mathcal{L}(\theta) = \sum_{t=1}^{T} \ln p(z_t \mid z_{1:t-1}, \theta)$$
+```math
+\ln \mathcal{L}(\theta) = \sum_{t=1}^{T} \ln p(z_t \mid z_{1:t-1}, \theta)
+```
 
-$$\ln p(z_t \mid z_{1:t-1}, \theta) = -\frac{n_t}{2}\ln(2\pi) - \frac{1}{2}\ln|F_t| - \frac{1}{2}v_t^\top F_t^{-1} v_t$$
+```math
+\ln p(z_t \mid z_{1:t-1}, \theta) = -\frac{n_t}{2}\ln(2\pi) - \frac{1}{2}\ln|F_t| - \frac{1}{2}v_t^\top F_t^{-1} v_t
+```
 
 ここで $n_t$ は時点 $t$ における有効な観測数（欠損値を除外）。
 
@@ -512,7 +618,9 @@ $$\ln p(z_t \mid z_{1:t-1}, \theta) = -\frac{n_t}{2}\ln(2\pi) - \frac{1}{2}\ln|F
 
 状態共分散は離散Lyapunov方程式の解で初期化する：
 
-$$P_0 = \mathcal{T} \cdot P_0 \cdot \mathcal{T}^\top + \mathcal{R} \cdot \Sigma_\varepsilon \cdot \mathcal{R}^\top$$
+```math
+P_0 = \mathcal{T} \cdot P_0 \cdot \mathcal{T}^\top + \mathcal{R} \cdot \Sigma_\varepsilon \cdot \mathcal{R}^\top
+```
 
 #### 数値安定化
 
@@ -524,17 +632,23 @@ $$P_0 = \mathcal{T} \cdot P_0 \cdot \mathcal{T}^\top + \mathcal{R} \cdot \Sigma_
 
 #### ベイズの定理
 
-$$p(\theta \mid z_{1:T}) \propto \mathcal{L}(z_{1:T} \mid \theta) \cdot p(\theta)$$
+```math
+p(\theta \mid z_{1:T}) \propto \mathcal{L}(z_{1:T} \mid \theta) \cdot p(\theta)
+```
 
 対数形式：
 
-$$\ln p(\theta \mid z_{1:T}) = \ln \mathcal{L}(\theta) + \ln p(\theta) + \text{const.}$$
+```math
+\ln p(\theta \mid z_{1:T}) = \ln \mathcal{L}(\theta) + \ln p(\theta) + \text{const.}
+```
 
 #### Random Walk Metropolis-Hastings
 
 **第1段階: モード探索**
 
-$$\theta^* = \arg\min_\theta \left[-\ln p(\theta \mid z_{1:T})\right]$$
+```math
+\theta^{*} = \arg\min_\theta \left[-\ln p(\theta \mid z_{1:T})\right]
+```
 
 L-BFGS-B法で解き、モードにおけるHessian $\mathcal{H}$ を有限差分で計算する。
 
@@ -542,17 +656,23 @@ L-BFGS-B法で解き、モードにおけるHessian $\mathcal{H}$ を有限差�
 
 提案分布：
 
-$$\theta^{prop} = \theta^{cur} + \xi, \qquad \xi \sim \mathcal{N}\left(0, \frac{2.38^2}{d} \cdot \mathcal{H}^{-1}\right)$$
+```math
+\theta^{prop} = \theta^{cur} + \xi, \qquad \xi \sim \mathcal{N}\left(0, \frac{2.38^2}{d} \cdot \mathcal{H}^{-1}\right)
+```
 
 ここで $d$ は推定パラメータ数。スケーリング定数 $2.38^2/d$ はRoberts et al. (1997) の最適値。
 
 受容確率：
 
-$$\alpha = \min\left(1, \frac{p(\theta^{prop} \mid z)}{p(\theta^{cur} \mid z)}\right)$$
+```math
+\alpha = \min\left(1, \frac{p(\theta^{prop} \mid z)}{p(\theta^{cur} \mid z)}\right)
+```
 
 対数尤度域で:
 
-$$\ln\alpha = \ln p(\theta^{prop} \mid z) - \ln p(\theta^{cur} \mid z)$$
+```math
+\ln\alpha = \ln p(\theta^{prop} \mid z) - \ln p(\theta^{cur} \mid z)
+```
 
 $\ln U < \ln\alpha$ ($U \sim \text{Uniform}(0,1)$) なら $\theta^{prop}$ を受容。
 
@@ -618,15 +738,21 @@ $\sigma_{me,y}, \sigma_{me,c}, \sigma_{me,i}, \sigma_{me,\pi}, \sigma_{me,w}, \s
 
 **Beta分布** ($x \in [0,1]$):
 
-$$a = \mu \cdot \kappa, \quad b = (1-\mu) \cdot \kappa, \quad \kappa = \frac{\mu(1-\mu)}{\sigma^2} - 1$$
+```math
+a = \mu \cdot \kappa, \quad b = (1-\mu) \cdot \kappa, \quad \kappa = \frac{\mu(1-\mu)}{\sigma^2} - 1
+```
 
 **Gamma分布** ($x > 0$):
 
-$$k = \left(\frac{\mu}{\sigma}\right)^2, \quad \theta_{scale} = \frac{\sigma^2}{\mu}$$
+```math
+k = \left(\frac{\mu}{\sigma}\right)^2, \quad \theta_{scale} = \frac{\sigma^2}{\mu}
+```
 
 **逆Gamma分布** ($x > 0$):
 
-$$\alpha = \left(\frac{\mu}{\sigma}\right)^2 + 2, \quad \beta_{scale} = \mu(\alpha - 1)$$
+```math
+\alpha = \left(\frac{\mu}{\sigma}\right)^2 + 2, \quad \beta_{scale} = \mu(\alpha - 1)
+```
 
 ### 7.5 収束診断
 
@@ -634,15 +760,21 @@ $$\alpha = \left(\frac{\mu}{\sigma}\right)^2 + 2, \quad \beta_{scale} = \mu(\alp
 
 $m$ チェーン、各 $n$ サンプルに対し：
 
-$$W = \frac{1}{m}\sum_{j=1}^{m} s_j^2, \qquad \frac{B}{n} = \frac{1}{m-1}\sum_{j=1}^{m}(\bar{\theta}_j - \bar{\theta})^2$$
+```math
+W = \frac{1}{m}\sum_{j=1}^{m} s_j^2, \qquad \frac{B}{n} = \frac{1}{m-1}\sum_{j=1}^{m}(\bar{\theta}_j - \bar{\theta})^2
+```
 
-$$\hat{V} = \frac{n-1}{n}W + \frac{1}{n}B, \qquad \hat{R} = \sqrt{\frac{\hat{V}}{W}}$$
+```math
+\hat{V} = \frac{n-1}{n}W + \frac{1}{n}B, \qquad \hat{R} = \sqrt{\frac{\hat{V}}{W}}
+```
 
 判定基準: $\hat{R} < 1.1$ で収束と判定。
 
 #### 有効サンプルサイズ (ESS)
 
-$$ESS = \frac{n_{total}}{1 + 2\sum_{k=1}^{\infty}\hat{\rho}(k)}$$
+```math
+ESS = \frac{n_{total}}{1 + 2\sum_{k=1}^{\infty}\hat{\rho}(k)}
+```
 
 ここで $\hat{\rho}(k)$ はラグ $k$ の自己相関。
 
@@ -650,13 +782,17 @@ $$ESS = \frac{n_{total}}{1 + 2\sum_{k=1}^{\infty}\hat{\rho}(k)}$$
 
 チェーンの最初10%と最後50%の平均を比較：
 
-$$z = \frac{\bar{\theta}_{first} - \bar{\theta}_{last}}{\sqrt{SE_{first}^2 + SE_{last}^2}} \sim \mathcal{N}(0,1)$$
+```math
+z = \frac{\bar{\theta}_{first} - \bar{\theta}_{last}}{\sqrt{SE_{first}^2 + SE_{last}^2}} \sim \mathcal{N}(0,1)
+```
 
 $p > 0.05$ で収束と判定。
 
 ### 7.6 周辺尤度（Laplace近似）
 
-$$\ln p(z_{1:T}) \approx \ln p(z_{1:T} \mid \theta^*) + \ln p(\theta^*) + \frac{d}{2}\ln(2\pi) - \frac{1}{2}\ln|\mathcal{H}|$$
+```math
+\ln p(z_{1:T}) \approx \ln p(z_{1:T} \mid \theta^{*}) + \ln p(\theta^{*}) + \frac{d}{2}\ln(2\pi) - \frac{1}{2}\ln|\mathcal{H}|
+```
 
 モデル比較のためのベイズファクター: $BF_{12} = p(z \mid M_1) / p(z \mid M_2)$
 
@@ -719,7 +855,7 @@ $$\ln p(z_{1:T}) \approx \ln p(z_{1:T} \mid \theta^*) + \ln p(\theta^*) + \frac{
 | $\rho_r$ | 金利平滑化 | 0.85 | 慣性パラメータ |
 | $\phi_\pi$ | インフレ反応 | 1.5 | Taylor原則 ($>1$) |
 | $\phi_y$ | 産出反応 | 0.125 | |
-| $\pi^*$ | インフレ目標 | 0.005 | 四半期（年率2%） |
+| $\pi^{*}$ | インフレ目標 | 0.005 | 四半期（年率2%） |
 | $\underline{R}$ | 名目金利下限 | -0.001 | マイナス金利 |
 
 ### 8.7 金融部門

@@ -23,3 +23,6 @@ build/
 # Local config
 .claude/settings.local.json
 .pyscn/
+
+# Generated output
+output/

@@ -153,12 +153,19 @@ class DualRateTaxPolicyAnalyzer:
             baseline: 比較基準となる税制
             shock_type: ショックタイプ
             periods: シミュレーション期間
+
+        Note:
+            シミュレーションに使うショックサイズは policy の実効税率と
+            モデルの定常状態 tau_c（model.params.government.tau_c）の差分で計算する。
+            baseline は表示・命名用途のみで、シミュレーション自体には影響しない。
         """
         scenario = self.create_scenario(policy, baseline, shock_type, periods)
+        model_ss_tau_c = self.model.params.government.tau_c
+        simulation_shock = policy.tau_c_effective - model_ss_tau_c
         simulator = ImpulseResponseSimulator(self.model)
         irf = simulator.simulate(
             shock_name="e_tau",
-            shock_size=scenario.shock_size,
+            shock_size=simulation_shock,
             periods=scenario.periods,
         )
 

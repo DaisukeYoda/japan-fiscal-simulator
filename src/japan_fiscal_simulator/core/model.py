@@ -246,6 +246,8 @@ class DSGEModel:
 
         # (3) インフレ: 税率「変化」の一度きりの価格転嫁（水準効果は持たせない）
         Q[idx["pi"], 3] = imp.inflation_tax_passthrough
+        # dtau_t = (rho - 1) * tau_{t-1} + e_tau_t
+        P[idx["pi"], idx["tau_c"]] = imp.inflation_tax_passthrough * (rho_tau - 1.0)
 
         # (4) 名目金利: テイラールールで現在の pi と y に整合させる
         Q[idx["R"], 3] = cb.phi_pi * Q[idx["pi"], 3] + cb.phi_y * Q[idx["y"], 3]

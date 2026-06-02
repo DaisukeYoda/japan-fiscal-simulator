@@ -39,10 +39,10 @@ CURRENT_FOOD, CURRENT_NONFOOD = 0.08, 0.10
 NEW_FOOD, NEW_NONFOOD = 0.01, 0.10
 
 CURRENT_EFFECTIVE = FOOD_SHARE * CURRENT_FOOD + (1 - FOOD_SHARE) * CURRENT_NONFOOD  # 9.5%
-NEW_EFFECTIVE = FOOD_SHARE * NEW_FOOD + (1 - FOOD_SHARE) * NEW_NONFOOD              # 7.75%
-SHOCK = NEW_EFFECTIVE - CURRENT_EFFECTIVE                                          # -1.75%pt
+NEW_EFFECTIVE = FOOD_SHARE * NEW_FOOD + (1 - FOOD_SHARE) * NEW_NONFOOD  # 7.75%
+SHOCK = NEW_EFFECTIVE - CURRENT_EFFECTIVE  # -1.75%pt
 
-HOLD_QUARTERS = 8   # 2年間維持
+HOLD_QUARTERS = 8  # 2年間維持
 PERIODS = 40
 
 
@@ -80,8 +80,25 @@ def single_impulse(P: np.ndarray, Q: np.ndarray, size: float, periods: int) -> n
     return propagate(P, Q, eps, periods)
 
 
+def build_model() -> DSGEModel:
+    """現行制度の実効税率を定常状態とするモデルを構築する。"""
+    calibration = JapanCalibration.create().set_consumption_tax(CURRENT_EFFECTIVE)
+    return DSGEModel(calibration.parameters)
+
+
+def estimate_revenue_loss(model: DSGEModel, tau_path: np.ndarray, hold: int) -> float:
+    """実効税率の低下による税収減をGDP比で概算する。"""
+    ss = model.steady_state
+    c_y = ss.consumption / ss.output
+    elasticity = (
+        model.derived_coefficients.compute_impulse_coefficients().consumption_tax_elasticity
+    )
+    behavioral_adjustment = 1.0 - model.params.government.tau_c * elasticity
+    return -np.sum(tau_path[:hold]) * c_y * behavioral_adjustment
+
+
 def main() -> None:
-    model = DSGEModel(JapanCalibration.create().parameters)
+    model = build_model()
     pf = model.policy_function
     P, Q = pf.P, pf.Q
     rho = model.params.shocks.rho_tau_c
@@ -90,9 +107,9 @@ def main() -> None:
     print("=" * 70)
     print("食料品消費税 1%・2年限定 時限減税シミュレーション")
     print("=" * 70)
-    print(f"現行実効税率 : {CURRENT_EFFECTIVE*100:.2f}%  (食料品8% / 非食料品10%)")
-    print(f"新制度実効税率: {NEW_EFFECTIVE*100:.2f}%  (食料品1% / 非食料品10%)")
-    print(f"実効税率変化 : {SHOCK*100:+.2f}%pt   維持期間: {HOLD_QUARTERS}四半期")
+    print(f"現行実効税率 : {CURRENT_EFFECTIVE * 100:.2f}%  (食料品8% / 非食料品10%)")
+    print(f"新制度実効税率: {NEW_EFFECTIVE * 100:.2f}%  (食料品1% / 非食料品10%)")
+    print(f"実効税率変化 : {SHOCK * 100:+.2f}%pt   維持期間: {HOLD_QUARTERS}四半期")
     print(f"AR(1)持続性 rho_tau_c = {rho}  /  BK条件: {pf.bk_satisfied}")
     print()
 
@@ -107,9 +124,9 @@ def main() -> None:
     print("税率(tau_c)経路の確認 [%pt 乖離]:")
     tc = col(x_timed, "tau_c")
     print("  四半期 :", " ".join(f"{q:>6d}" for q in [0, 1, 4, 7, 8, 9, 12]))
-    print("  時限版 :", " ".join(f"{tc[q]*100:>6.2f}" for q in [0, 1, 4, 7, 8, 9, 12]))
+    print("  時限版 :", " ".join(f"{tc[q] * 100:>6.2f}" for q in [0, 1, 4, 7, 8, 9, 12]))
     tca = col(x_ar1, "tau_c")
-    print("  AR1版  :", " ".join(f"{tca[q]*100:>6.2f}" for q in [0, 1, 4, 7, 8, 9, 12]))
+    print("  AR1版  :", " ".join(f"{tca[q] * 100:>6.2f}" for q in [0, 1, 4, 7, 8, 9, 12]))
     print()
 
     # 主要変数の経路
@@ -119,22 +136,26 @@ def main() -> None:
         peak_c = c[np.argmax(np.abs(c))]
         cum8_y = np.sum(y[:8])
         print(f"[{label}]")
-        print(f"  GDP    ピーク: {peak_y*100:+.3f}%   2年累積(8Q): {cum8_y*100:+.3f}%pt·Q")
-        print(f"  消費   ピーク: {peak_c*100:+.3f}%")
-        print("  GDP    t=0..9: " + " ".join(f"{y[q]*100:+.2f}" for q in range(10)))
-        print("  消費   t=0..9: " + " ".join(f"{c[q]*100:+.2f}" for q in range(10)))
-        print("  政府債務 t=0..9: " + " ".join(f"{b[q]*100:+.2f}" for q in range(10)))
+        print(f"  GDP    ピーク: {peak_y * 100:+.3f}%   2年累積(8Q): {cum8_y * 100:+.3f}%pt·Q")
+        print(f"  消費   ピーク: {peak_c * 100:+.3f}%")
+        print("  GDP    t=0..9: " + " ".join(f"{y[q] * 100:+.2f}" for q in range(10)))
+        print("  消費   t=0..9: " + " ".join(f"{c[q] * 100:+.2f}" for q in range(10)))
+        print("  政府債務 t=0..9: " + " ".join(f"{b[q] * 100:+.2f}" for q in range(10)))
         # 反動: 終了直後(t=8,9)で符号が反転しているか
-        print(f"  反動チェック GDP t=7→8→9: {y[7]*100:+.3f} → {y[8]*100:+.3f} → {y[9]*100:+.3f}")
+        print(
+            f"  反動チェック GDP t=7→8→9: {y[7] * 100:+.3f} → {y[8] * 100:+.3f} → {y[9] * 100:+.3f}"
+        )
         print()
 
     summarize("時限措置 (8Q維持→復帰)", x_timed)
     summarize("AR(1)減衰 (参考)", x_ar1)
 
-    # 財政コストの目安: 減税期間中の税率低下 × 消費（GDP比で粗く）
+    # 財政コストの目安: 実効税率低下 × 消費/GDP（消費の行動反応を補正）
     tau_path = col(x_timed, "tau_c")
-    revenue_loss = -np.sum(tau_path[:HOLD_QUARTERS]) * FOOD_SHARE  # 食料消費に対する税率低下
-    print(f"参考: 減税期間中の食料品税収減の目安 ≈ {revenue_loss*100:.2f}%pt·Q (実効GDP比, 粗計算)")
+    revenue_loss = estimate_revenue_loss(model, tau_path, HOLD_QUARTERS)
+    print(
+        f"参考: 減税期間中の食料品税収減の目安 ≈ {revenue_loss * 100:.2f}%pt·Q (GDP比, 行動反応補正後)"
+    )
 
     # 図の保存
     try:

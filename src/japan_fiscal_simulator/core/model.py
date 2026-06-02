@@ -213,14 +213,56 @@ class DSGEModel:
         Q[idx["b"], 1] = gov.g_y_ratio
 
         # e_tau: 消費税ショック (index 3)
+        #
+        # 消費税は (1) 相対価格を通じ消費へ波及し、(2) その税率「水準」が続く限り
+        # 効果が持続する。そこで税率水準を消費へ結線（P の tau_c 列）し、ショック
+        # 「変化」の瞬間は Q で表す。これにより c_t = -elasticity * tau_c_t が
+        # 毎期成り立ち、時限減税の維持期間中も消費が高止まりする。
+        # GDP は支出会計恒等式から導出し、消費との整合を保証する。債務は減税期間中
+        # 毎期の税収減をフローとして累積させる。
+        rho_tau = shocks.rho_tau_c
+        ss = self.steady_state
+        c_y = ss.consumption / ss.output
+        i_y = ss.investment / ss.output
+        g_y_share = ss.government_spending / ss.output
+        b_y = ss.government_debt / ss.output
+
+        # 税率はそれ自体が外生AR(1)（既存どおり）
         Q[idx["tau_c"], 3] = 1.0
-        Q[idx["c"], 3] = -imp.consumption_tax_elasticity
-        Q[idx["y"], 3] = -imp.consumption_tax_elasticity * imp.output_tax_multiplier_factor
-        Q[idx["pi"], 3] = imp.inflation_tax_passthrough
-        Q[idx["R"], 3] = cb.phi_pi * imp.inflation_tax_passthrough + cb.phi_y * (
-            -imp.consumption_tax_elasticity * imp.output_tax_multiplier_factor
+
+        # (1) 消費: 相対価格効果 c = -1/(1+tau) * tau。水準効果のため P にも結線
+        kappa_c = -imp.consumption_tax_elasticity
+        Q[idx["c"], 3] = kappa_c
+        P[idx["c"], idx["tau_c"]] = kappa_c * rho_tau
+
+        # (2) GDP: 支出会計恒等式 ŷ = (C/Y)ĉ + (I/Y)î + (G/Y)ĝ から導出
+        #     （投資・政府支出は消費税へ直接反応しないので実質 (C/Y)ĉ に等しい）
+        Q[idx["y"], 3] = c_y * Q[idx["c"], 3] + i_y * Q[idx["i"], 3] + g_y_share * Q[idx["g"], 3]
+        P[idx["y"], idx["tau_c"]] = (
+            c_y * P[idx["c"], idx["tau_c"]]
+            + i_y * P[idx["i"], idx["tau_c"]]
+            + g_y_share * P[idx["g"], idx["tau_c"]]
         )
-        Q[idx["b"], 3] = -imp.debt_tax_effect
+
+        # (3) インフレ: 税率「変化」の一度きりの価格転嫁（水準効果は持たせない）
+        Q[idx["pi"], 3] = imp.inflation_tax_passthrough
+
+        # (4) 名目金利: テイラールールで現在の pi と y に整合させる
+        Q[idx["R"], 3] = cb.phi_pi * Q[idx["pi"], 3] + cb.phi_y * Q[idx["y"], 3]
+        P[idx["R"], idx["tau_c"]] = (
+            cb.phi_pi * P[idx["pi"], idx["tau_c"]] + cb.phi_y * P[idx["y"], idx["tau_c"]]
+        )
+
+        # 実質金利 = 名目金利 - インフレ（line 166 の後に税チャネルを足すので明示更新）
+        Q[idx["r"], 3] = Q[idx["R"], 3] - Q[idx["pi"], 3]
+        P[idx["r"], idx["tau_c"]] = P[idx["R"], idx["tau_c"]] - P[idx["pi"], idx["tau_c"]]
+
+        # (5) 政府債務: 減税による税収減を毎期フローとして累積
+        #     deficit/債務 ≈ (C/Y)/(B/Y) * (1 - tau_ss*elasticity) * (-dtau)
+        #     （括弧内は税収のラッファー的な行動反応の補正）
+        kappa_b = -(c_y / b_y) * (1.0 - gov.tau_c * imp.consumption_tax_elasticity)
+        Q[idx["b"], 3] = kappa_b
+        P[idx["b"], idx["tau_c"]] = kappa_b * rho_tau
 
         # e_risk: リスクプレミアムショック (index 4)
         Q[idx["r"], 4] = imp.risk_interest_rate_response

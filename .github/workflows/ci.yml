@@ -29,3 +29,6 @@ jobs:
 
       - name: Type check
         run: uv run mypy src/japan_fiscal_simulator
+
+      - name: Test
+        run: uv run pytest

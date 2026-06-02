@@ -152,6 +152,12 @@ class TestFrozenDataclassImmutability:
         with pytest.raises(FrozenInstanceError):
             params.alpha = 0.5  # type: ignore[misc]
 
+    def test_default_params_frozen(self) -> None:
+        """DefaultParametersも変更不可"""
+        params = DefaultParameters()
+        with pytest.raises(FrozenInstanceError):
+            params.household = HouseholdParameters(beta=0.5)  # type: ignore[misc]
+
 
 class TestCacheInvalidation:
     """キャッシュ無効化のテスト"""

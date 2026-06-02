@@ -1,6 +1,7 @@
 """DSGEモデルのデフォルトパラメータ定義"""
 
 from dataclasses import dataclass, field, replace
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -129,7 +130,7 @@ class ShockParameters:
         }
 
 
-@dataclass
+@dataclass(frozen=True)
 class DefaultParameters:
     """全パラメータを統合したデフォルト設定"""
 
@@ -154,20 +155,16 @@ class DefaultParameters:
         shocks: ShockParameters | None = None,
     ) -> "DefaultParameters":
         """パラメータの一部を更新した新しいインスタンスを返す"""
+        updates: dict[str, Any] = {
+            "household": household,
+            "firm": firm,
+            "government": government,
+            "central_bank": central_bank,
+            "financial": financial,
+            "investment": investment,
+            "labor": labor,
+            "shocks": shocks,
+        }
         return replace(
-            self,
-            household=household if household is not None else self.household,
-            firm=firm if firm is not None else self.firm,
-            government=government if government is not None else self.government,
-            central_bank=central_bank if central_bank is not None else self.central_bank,
-            financial=financial if financial is not None else self.financial,
-            investment=investment if investment is not None else self.investment,
-            labor=labor if labor is not None else self.labor,
-            shocks=shocks if shocks is not None else self.shocks,
+            self, **{name: value for name, value in updates.items() if value is not None}
         )
-
-
-# 定数定義
-QUARTERS_PER_YEAR = 4
-DEFAULT_SIMULATION_PERIODS = 40  # 10年間
-DEFAULT_IMPULSE_SIZE = 0.01  # 1%ショック

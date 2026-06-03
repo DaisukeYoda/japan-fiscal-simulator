@@ -305,12 +305,10 @@ class DSGEModel:
         )
 
         Q[idx["R"], fx_shock_idx] = (
-            cb.phi_pi * Q[idx["pi"], fx_shock_idx]
-            + cb.phi_y * Q[idx["y"], fx_shock_idx]
+            cb.phi_pi * Q[idx["pi"], fx_shock_idx] + cb.phi_y * Q[idx["y"], fx_shock_idx]
         )
         P[idx["R"], idx["fx"]] = (
-            cb.phi_pi * P[idx["pi"], idx["fx"]]
-            + cb.phi_y * P[idx["y"], idx["fx"]]
+            cb.phi_pi * P[idx["pi"], idx["fx"]] + cb.phi_y * P[idx["y"], idx["fx"]]
         )
 
         Q[idx["r"], fx_shock_idx] = Q[idx["R"], fx_shock_idx] - Q[idx["pi"], fx_shock_idx]

@@ -76,9 +76,7 @@ class TestImpulseResponseSimulator:
 
         assert isinstance(cumulative, float)
 
-    def test_yen_depreciation_stagflation_signs(
-        self, simulator: ImpulseResponseSimulator
-    ) -> None:
+    def test_yen_depreciation_stagflation_signs(self, simulator: ImpulseResponseSimulator) -> None:
         """円安はインフレ上昇・消費低下・名目金利上昇をもたらす"""
         result = simulator.simulate("e_fx", shock_size=0.10, periods=40)
 
@@ -105,9 +103,7 @@ class TestImpulseResponseSimulator:
     ) -> None:
         """円安は消費税減税の値下げ効果を相殺する"""
         tax_cut = simulator.simulate_consumption_tax_cut(tax_cut=0.02, periods=20)
-        yen_depreciation = simulator.simulate_yen_depreciation(
-            depreciation_rate=0.10, periods=20
-        )
+        yen_depreciation = simulator.simulate_yen_depreciation(depreciation_rate=0.10, periods=20)
 
         tax_cut_pi = tax_cut.get_response("pi")
         fx_pi = yen_depreciation.get_response("pi")

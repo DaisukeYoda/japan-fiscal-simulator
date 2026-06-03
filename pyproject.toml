@@ -100,12 +100,17 @@ follow_untyped_imports = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = "test_*.py"
+markers = [
+    "slow: 重い統合テスト（MCMC/推定系）",
+]
+addopts = "-m 'not slow' --durations=10"
 
 [dependency-groups]
 dev = [
     "mypy>=1.19.1",
     "pytest>=9.0.2",
     "pytest-cov>=7.0.0",
+    "pytest-xdist>=3.8.0",
     "ruff>=0.14.14",
     "scipy-stubs>=1.17.0",
 ]

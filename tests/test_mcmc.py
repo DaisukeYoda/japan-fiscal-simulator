@@ -47,6 +47,7 @@ class TestMCMCConfig:
         assert cfg.n_draws == 500
 
 
+@pytest.mark.slow
 class TestMetropolisHastingsGaussian:
     """ガウスターゲットでのMHサンプラーテスト"""
 
@@ -227,6 +228,7 @@ class TestMakeLogPosterior:
         assert isinstance(lp, float)
 
 
+@pytest.mark.slow
 class TestMCMCWithDSGE:
     """DSGEモデルを使ったMCMC統合テスト（軽量）"""
 

@@ -23,6 +23,8 @@ from japan_fiscal_simulator.estimation.results import (
 from japan_fiscal_simulator.estimation.state_space import StateSpaceBuilder
 from japan_fiscal_simulator.parameters.defaults import DefaultParameters
 
+pytestmark = pytest.mark.slow
+
 
 class TestEstimationPipeline:
     """推定パイプライン全体の統合テスト"""

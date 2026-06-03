@@ -51,6 +51,14 @@ class TestImpulseResponseSimulator:
         assert result.shock_name == "e_tau"
         assert result.shock_size == -0.02  # 減税はマイナス
 
+    def test_simulate_yen_depreciation(self, simulator: ImpulseResponseSimulator) -> None:
+        """円安ショックのシミュレーション"""
+        result = simulator.simulate_yen_depreciation(depreciation_rate=0.10, periods=40)
+
+        assert result.shock_name == "e_fx"
+        assert result.shock_size == 0.10
+        assert "fx" in result.responses
+
     def test_peak_response(self, simulator: ImpulseResponseSimulator) -> None:
         """ピーク応答の計算"""
         result = simulator.simulate("e_g", shock_size=0.01, periods=40)
@@ -67,6 +75,47 @@ class TestImpulseResponseSimulator:
         cumulative = result.cumulative_response("y", horizon=4)
 
         assert isinstance(cumulative, float)
+
+    def test_yen_depreciation_stagflation_signs(
+        self, simulator: ImpulseResponseSimulator
+    ) -> None:
+        """円安はインフレ上昇・消費低下・名目金利上昇をもたらす"""
+        result = simulator.simulate("e_fx", shock_size=0.10, periods=40)
+
+        pi = result.get_response("pi")
+        c = result.get_response("c")
+        y = result.get_response("y")
+        r_nominal = result.get_response("R")
+
+        assert pi[0] > 0
+        assert c[0] < 0
+        assert y[0] < 0
+        assert r_nominal[0] > 0
+
+    def test_yen_depreciation_converges(self, simulator: ImpulseResponseSimulator) -> None:
+        """円安ショックの応答は長期で収束する"""
+        result = simulator.simulate("e_fx", shock_size=0.10, periods=80)
+
+        assert abs(result.get_response("fx")[-1]) < abs(result.get_response("fx")[0])
+        assert abs(result.get_response("pi")[-1]) < abs(result.get_response("pi")[0])
+        assert abs(result.get_response("c")[-1]) < abs(result.get_response("c")[0])
+
+    def test_yen_depreciation_offsets_consumption_tax_cut_disinflation(
+        self, simulator: ImpulseResponseSimulator
+    ) -> None:
+        """円安は消費税減税の値下げ効果を相殺する"""
+        tax_cut = simulator.simulate_consumption_tax_cut(tax_cut=0.02, periods=20)
+        yen_depreciation = simulator.simulate_yen_depreciation(
+            depreciation_rate=0.10, periods=20
+        )
+
+        tax_cut_pi = tax_cut.get_response("pi")
+        fx_pi = yen_depreciation.get_response("pi")
+        combined_pi = tax_cut_pi + fx_pi
+
+        assert tax_cut_pi[0] < 0
+        assert fx_pi[0] > 0
+        assert combined_pi[0] > tax_cut_pi[0]
 
 
 class TestFiscalMultiplierCalculator:

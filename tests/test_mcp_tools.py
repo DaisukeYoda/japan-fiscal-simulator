@@ -55,6 +55,12 @@ class TestSimulatePolicy:
         result = simulate_policy("consumption_tax", -0.02, context=ctx)
         assert result["fiscal_multiplier"] is not None
 
+    def test_yen_depreciation(self, ctx: SimulationContext) -> None:
+        result = simulate_policy("yen_depreciation", 0.10, context=ctx)
+        assert result["scenario"]["policy_type"] == "yen_depreciation"
+        assert result["impulse_response"]["variables"]["pi"]["values"][0] > 0
+        assert result["impulse_response"]["variables"]["fx"]["values"][0] == pytest.approx(0.10)
+
     def test_invalid_policy_type(self, ctx: SimulationContext) -> None:
         with pytest.raises(ShockValidationError):
             simulate_policy("invalid_policy", 0.01, context=ctx)

@@ -277,7 +277,7 @@ class TestNewKeynesianModelExpanded:
 
 
 class TestDSGEModelExpanded:
-    """拡張DSGEモデル（16変数）のテスト"""
+    """拡張DSGEモデル（17変数）のテスト"""
 
     def test_variable_indices(self) -> None:
         """変数インデックスが正しく設定されていることを確認"""
@@ -285,14 +285,15 @@ class TestDSGEModelExpanded:
         assert "rk" in VARIABLE_INDICES
         assert VARIABLE_INDICES["q"] == 14
         assert VARIABLE_INDICES["rk"] == 15
+        assert VARIABLE_INDICES["fx"] == 16
 
     def test_n_variables(self) -> None:
         """変数数が正しいことを確認"""
-        assert N_VARIABLES == 16
+        assert N_VARIABLES == 17
 
     def test_n_shocks(self) -> None:
         """ショック数が正しいことを確認"""
-        assert N_SHOCKS == 7
+        assert N_SHOCKS == 8
 
     def test_policy_function_shape(self) -> None:
         """政策関数の形状が正しいことを確認"""

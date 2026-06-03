@@ -67,6 +67,20 @@ class FinancialParameters:
 
 
 @dataclass(frozen=True)
+class OpenEconomyParameters:
+    """開放経済liteパラメータ"""
+
+    import_share: float = 0.20  # 輸入財シェア
+    exchange_rate_passthrough: float = 0.30  # 円安からCPIへの部分転嫁率
+    eta: float = 0.20  # 輸入コスト増による実質所得ドラッグ
+
+    @property
+    def psi_m(self) -> float:
+        """円安からインフレへのコストプッシュ係数"""
+        return self.import_share * self.exchange_rate_passthrough
+
+
+@dataclass(frozen=True)
 class InvestmentParameters:
     """投資パラメータ
 
@@ -104,6 +118,7 @@ class ShockParameters:
     rho_tau_c: float = 0.95  # 消費税ショック
     rho_m: float = 0.50  # 金融政策ショック
     rho_risk: float = 0.75  # リスクプレミアムショック
+    rho_fx: float = 0.90  # 円安ショック
     # 投資固有技術ショック: Smets-Wouters (2007) では ρ_i ≈ 0.71
     rho_i: float = 0.70
     # 賃金マークアップショック: Smets-Wouters (2007) では ρ_w ≈ 0.89
@@ -117,6 +132,7 @@ class ShockParameters:
     sigma_tau_c: float = 0.005
     sigma_m: float = 0.0025
     sigma_risk: float = 0.01
+    sigma_fx: float = 0.01
     sigma_i: float = 0.01
     sigma_w: float = 0.01  # 賃金マークアップショック
     sigma_p: float = 0.01  # 価格マークアップショック
@@ -139,6 +155,7 @@ class DefaultParameters:
     government: GovernmentParameters = field(default_factory=GovernmentParameters)
     central_bank: CentralBankParameters = field(default_factory=CentralBankParameters)
     financial: FinancialParameters = field(default_factory=FinancialParameters)
+    open_economy: OpenEconomyParameters = field(default_factory=OpenEconomyParameters)
     investment: InvestmentParameters = field(default_factory=InvestmentParameters)
     labor: LaborParameters = field(default_factory=LaborParameters)
     shocks: ShockParameters = field(default_factory=ShockParameters)
@@ -150,6 +167,7 @@ class DefaultParameters:
         government: GovernmentParameters | None = None,
         central_bank: CentralBankParameters | None = None,
         financial: FinancialParameters | None = None,
+        open_economy: OpenEconomyParameters | None = None,
         investment: InvestmentParameters | None = None,
         labor: LaborParameters | None = None,
         shocks: ShockParameters | None = None,
@@ -161,6 +179,7 @@ class DefaultParameters:
             "government": government,
             "central_bank": central_bank,
             "financial": financial,
+            "open_economy": open_economy,
             "investment": investment,
             "labor": labor,
             "shocks": shocks,

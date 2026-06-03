@@ -126,6 +126,10 @@ class TestDSGEModelGoldenMaster:
         tau_c_idx = model.get_variable_index("tau_c")
         np.testing.assert_allclose(P[tau_c_idx, tau_c_idx], 0.95, rtol=1e-10)
 
+        # fx の持続性 = rho_fx = 0.9
+        fx_idx = model.get_variable_index("fx")
+        np.testing.assert_allclose(P[fx_idx, fx_idx], 0.9, rtol=1e-10)
+
     def test_policy_function_Q_shock_mapping(self, model: DSGEModel) -> None:
         """ショック応答行列Qのショックマッピングを検証"""
         pf = model.policy_function
@@ -142,6 +146,10 @@ class TestDSGEModelGoldenMaster:
         # e_tau (index 3) は tau_c (index 12) に1.0の効果
         tau_c_idx = model.get_variable_index("tau_c")
         np.testing.assert_allclose(Q[tau_c_idx, 3], 1.0, rtol=1e-10)
+
+        # e_fx は末尾追加で既存ショック列を動かさない
+        fx_idx = model.get_variable_index("fx")
+        np.testing.assert_allclose(Q[fx_idx, 7], 1.0, rtol=1e-10)
 
 
 class TestImpulseResponseGoldenMaster:

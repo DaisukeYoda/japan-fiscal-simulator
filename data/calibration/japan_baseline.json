@@ -39,17 +39,24 @@
       "leverage_ss": 2.0,
       "survival_rate": 0.975
     },
+    "open_economy": {
+      "import_share": 0.20,
+      "exchange_rate_passthrough": 0.30,
+      "eta": 0.20
+    },
     "shocks": {
       "rho_a": 0.90,
       "rho_g": 0.90,
       "rho_tau_c": 0.95,
       "rho_m": 0.50,
       "rho_risk": 0.75,
+      "rho_fx": 0.90,
       "sigma_a": 0.01,
       "sigma_g": 0.01,
       "sigma_tau_c": 0.005,
       "sigma_m": 0.0025,
-      "sigma_risk": 0.01
+      "sigma_risk": 0.01,
+      "sigma_fx": 0.01
     }
   },
   "notes": {

@@ -22,10 +22,10 @@ jobs:
         run: uv sync
 
       - name: Lint
-        run: uv run ruff check src tests
+        run: uv run ruff check src tests analysis
 
       - name: Format check
-        run: uv run ruff format --check src tests
+        run: uv run ruff format --check src tests analysis
 
       - name: Type check
         run: uv run mypy src/japan_fiscal_simulator

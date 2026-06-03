@@ -118,6 +118,19 @@ class TestConsumptionTaxCutShock:
         y = irf.get_response("y")
         assert y[0] > 0
 
+    def test_inflation_tracks_tax_rate_changes(
+        self, model: DSGEModel, simulator: ImpulseResponseSimulator
+    ) -> None:
+        """インフレは税率水準ではなく税率変化に反応する"""
+        irf = simulator.simulate("e_tau", shock_size=-0.01, periods=4)
+        tau = irf.get_response("tau_c")
+        pi = irf.get_response("pi")
+        passthrough = (
+            model.derived_coefficients.compute_impulse_coefficients().inflation_tax_passthrough
+        )
+        delta_tau = np.diff(np.concatenate(([0.0], tau)))
+        np.testing.assert_allclose(pi, passthrough * delta_tau)
+
 
 # === 長期収束テスト ===
 

@@ -39,6 +39,10 @@ class ImpulseCoefficients:
     risk_output_response: float
     risk_consumption_response: float
 
+    # 円安コストプッシュ関連
+    exchange_rate_inflation_passthrough: float
+    exchange_rate_consumption_drag: float
+
 
 @dataclass(frozen=True)
 class TransitionCoefficients:
@@ -64,6 +68,7 @@ class DerivedCoefficients:
         firm = self.params.firm
         gov = self.params.government
         fin = self.params.financial
+        open_economy = self.params.open_economy
 
         # 投資の金利感応度は資本コストから導出
         # 投資の利子弾力性 ≈ 1 / (r_ss + δ) ≈ σ (近似)
@@ -99,6 +104,10 @@ class DerivedCoefficients:
         risk_output_response = risk_investment_response * firm.alpha
         risk_consumption_response = risk_output_response * (1 - gov.g_y_ratio)
 
+        # 円安による輸入物価上昇のCPI転嫁と実質所得ドラッグ
+        exchange_rate_inflation_passthrough = open_economy.psi_m
+        exchange_rate_consumption_drag = open_economy.consumption_drag
+
         return ImpulseCoefficients(
             government_spending_investment_spillover=government_spending_investment_spillover,
             crowding_out_consumption=crowding_out_consumption,
@@ -112,6 +121,8 @@ class DerivedCoefficients:
             risk_investment_response=risk_investment_response,
             risk_output_response=risk_output_response,
             risk_consumption_response=risk_consumption_response,
+            exchange_rate_inflation_passthrough=exchange_rate_inflation_passthrough,
+            exchange_rate_consumption_drag=exchange_rate_consumption_drag,
         )
 
     def compute_transition_coefficients(self) -> TransitionCoefficients:

@@ -17,6 +17,7 @@ class PolicyType(str, Enum):
     SUBSIDY = "subsidy"
     MONETARY = "monetary"
     PRICE_MARKUP = "price_markup"
+    YEN_DEPRECIATION = "yen_depreciation"
 
 
 class ShockType(str, Enum):

@@ -123,6 +123,7 @@ def simulate_policy(
         "monetary": "e_m",
         "subsidy": "e_g",
         "price_markup": "e_p",
+        "yen_depreciation": "e_fx",
     }
 
     shock_name = shock_mapping.get(policy_type)
@@ -223,10 +224,11 @@ def simulate_policy(
         "g": "政府支出",
         "b": "政府債務",
         "tau_c": "消費税率",
+        "fx": "円安率",
     }
 
     variables = {}
-    for var_name in ["y", "c", "i", "n", "pi", "r", "g", "b", "tau_c"]:
+    for var_name in ["y", "c", "i", "n", "pi", "r", "g", "b", "tau_c", "fx"]:
         response = irf_result.get_response(var_name)
         variables[var_name] = VariableTimeSeries(
             name=var_name,

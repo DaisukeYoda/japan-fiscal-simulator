@@ -300,11 +300,12 @@ class TestPythonAPI:
             "a",
             "q",
             "rk",
+            "fx",
         ]
         for var in expected_vars:
             assert var in VARIABLE_INDICES, f"{var} not in VARIABLE_INDICES"
 
-        expected_shocks = ["e_a", "e_g", "e_m", "e_tau", "e_risk", "e_i", "e_p"]
+        expected_shocks = ["e_a", "e_g", "e_m", "e_tau", "e_risk", "e_i", "e_p", "e_fx"]
         assert SHOCK_VARS == expected_shocks
 
 

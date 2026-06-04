@@ -147,6 +147,7 @@ def simulate_command(
             "transfer": "e_g",
             "monetary": "e_m",
             "price_markup": "e_p",
+            "yen_depreciation": "e_fx",
         }
 
         shock_name = shock_mapping.get(policy_type)

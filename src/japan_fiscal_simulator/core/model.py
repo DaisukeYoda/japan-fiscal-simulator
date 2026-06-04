@@ -36,16 +36,17 @@ VARIABLE_INDICES = {
     "a": 13,  # 技術ショック（先決）
     "q": 14,  # Tobin's Q
     "rk": 15,  # 資本収益率
+    "fx": 16,  # 円安率（先決）
 }
 
 N_VARIABLES = len(VARIABLE_INDICES)
 
 # 先決変数
-PREDETERMINED_VARS = ["k", "i", "g", "b", "tau_c", "a"]
+PREDETERMINED_VARS = ["k", "i", "g", "b", "tau_c", "a", "fx"]
 N_PREDETERMINED = len(PREDETERMINED_VARS)
 
 # ショック変数
-SHOCK_VARS = ["e_a", "e_g", "e_m", "e_tau", "e_risk", "e_i", "e_p"]
+SHOCK_VARS = ["e_a", "e_g", "e_m", "e_tau", "e_risk", "e_i", "e_p", "e_fx"]
 N_SHOCKS = len(SHOCK_VARS)
 
 
@@ -121,7 +122,7 @@ class DSGEModel:
         """NKモデルの解を拡張して政策関数を構築
 
         NKモデルの状態・制御ブロックから
-        16変数システムへ拡張する。
+        17変数システムへ拡張する。
         """
         nk_sol = self.nk_model.solution
         gov = self.params.government
@@ -172,12 +173,15 @@ class DSGEModel:
         # 消費税率: 外生
         P[idx["tau_c"], idx["tau_c"]] = shocks.rho_tau_c
 
+        # 円安率: 外生
+        P[idx["fx"], idx["fx"]] = shocks.rho_fx
+
         # ショック応答行列 Q
-        # ショック順序: e_a, e_g, e_m, e_tau, e_risk, e_i, e_p
+        # ショック順序: e_a, e_g, e_m, e_tau, e_risk, e_i, e_p, e_fx
         Q = np.zeros((n, N_SHOCKS))
 
         # NKショックをfullショックへマッピング
-        # full: [e_a, e_g, e_m, e_tau, e_risk, e_i, e_p]
+        # full: [e_a, e_g, e_m, e_tau, e_risk, e_i, e_p, e_fx]
         # nk  : [e_g, e_a, e_m, e_i, e_w, e_p]
         mapped_shocks = {
             0: 1,  # e_a
@@ -272,6 +276,43 @@ class DSGEModel:
         Q[idx["y"], 4] = -imp.risk_output_response
         Q[idx["c"], 4] = -imp.risk_consumption_response
         Q[idx["q"], 4] = -imp.risk_investment_response / inv.S_double_prime  # q への影響
+
+        # e_fx: 円安ショック (index 7)
+        #
+        # fx は減価率そのものとしてAR(1)で持続する。円安水準が続く限り、
+        # 輸入コストプッシュでインフレが上がり、実質所得ドラッグで消費が下がる。
+        fx_shock_idx = SHOCK_VARS.index("e_fx")
+        rho_fx = shocks.rho_fx
+        psi_m = imp.exchange_rate_inflation_passthrough
+        eta = imp.exchange_rate_consumption_drag
+
+        Q[idx["fx"], fx_shock_idx] = 1.0
+        Q[idx["pi"], fx_shock_idx] = psi_m
+        P[idx["pi"], idx["fx"]] = psi_m * rho_fx
+
+        Q[idx["c"], fx_shock_idx] = -eta
+        P[idx["c"], idx["fx"]] = -eta * rho_fx
+
+        Q[idx["y"], fx_shock_idx] = (
+            c_y * Q[idx["c"], fx_shock_idx]
+            + i_y * Q[idx["i"], fx_shock_idx]
+            + g_y_share * Q[idx["g"], fx_shock_idx]
+        )
+        P[idx["y"], idx["fx"]] = (
+            c_y * P[idx["c"], idx["fx"]]
+            + i_y * P[idx["i"], idx["fx"]]
+            + g_y_share * P[idx["g"], idx["fx"]]
+        )
+
+        Q[idx["R"], fx_shock_idx] = (
+            cb.phi_pi * Q[idx["pi"], fx_shock_idx] + cb.phi_y * Q[idx["y"], fx_shock_idx]
+        )
+        P[idx["R"], idx["fx"]] = (
+            cb.phi_pi * P[idx["pi"], idx["fx"]] + cb.phi_y * P[idx["y"], idx["fx"]]
+        )
+
+        Q[idx["r"], fx_shock_idx] = Q[idx["R"], fx_shock_idx] - Q[idx["pi"], fx_shock_idx]
+        P[idx["r"], idx["fx"]] = P[idx["R"], idx["fx"]] - P[idx["pi"], idx["fx"]]
 
         return PolicyFunctionResult(
             P=P,

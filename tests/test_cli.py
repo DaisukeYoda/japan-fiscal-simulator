@@ -46,6 +46,10 @@ class TestSimulateCommand:
         result = runner.invoke(app, ["simulate", "price_markup", "--shock", "0.01"])
         assert result.exit_code == 0
 
+    def test_simulate_yen_depreciation(self) -> None:
+        result = runner.invoke(app, ["simulate", "yen_depreciation", "--shock", "0.10"])
+        assert result.exit_code == 0
+
 
 class TestMultiplierCommand:
     """multiplierコマンドのテスト"""

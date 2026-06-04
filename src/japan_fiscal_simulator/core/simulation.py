@@ -57,7 +57,7 @@ class ImpulseResponseSimulator:
         """インパルス応答をシミュレート
 
         Args:
-            shock_name: ショック名（'e_a', 'e_g', 'e_m', 'e_tau', 'e_risk'）
+            shock_name: ショック名（'e_a', 'e_g', 'e_m', 'e_tau', 'e_risk', 'e_fx'）
             shock_size: ショックサイズ（デフォルト1%）
             periods: シミュレーション期間
 
@@ -173,6 +173,17 @@ class ImpulseResponseSimulator:
             periods: シミュレーション期間
         """
         return self.simulate("e_a", shock_size=productivity_increase, periods=periods)
+
+    def simulate_yen_depreciation(
+        self, depreciation_rate: float = 0.10, periods: int = 40
+    ) -> ImpulseResponseResult:
+        """円安ショックのシミュレーション
+
+        Args:
+            depreciation_rate: 円安率（例: 0.10 = 10%円安）
+            periods: シミュレーション期間
+        """
+        return self.simulate("e_fx", shock_size=depreciation_rate, periods=periods)
 
 
 @dataclass

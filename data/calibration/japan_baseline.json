@@ -42,7 +42,7 @@
     "open_economy": {
       "import_share": 0.20,
       "exchange_rate_passthrough": 0.30,
-      "eta": 0.20
+      "eta": 1.0
     },
     "shocks": {
       "rho_a": 0.90,

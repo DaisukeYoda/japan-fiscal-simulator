@@ -72,12 +72,20 @@ class OpenEconomyParameters:
 
     import_share: float = 0.20  # 輸入財シェア
     exchange_rate_passthrough: float = 0.30  # 円安からCPIへの部分転嫁率
-    eta: float = 0.20  # 輸入コスト増による実質所得ドラッグ
+    # 実質所得ドラッグの倍率: CPI転嫁分(psi_m)に対する乗数。
+    # 1.0 で「物価上昇分＝実質所得の目減り」を意味する（インフレ転嫁チャネルと整合）。
+    # 交易条件・輸入数量効果を上乗せしたい場合のみ 1.0 超に設定する。
+    eta: float = 1.0
 
     @property
     def psi_m(self) -> float:
-        """円安からインフレへのコストプッシュ係数"""
+        """円安からインフレへのコストプッシュ係数（輸入シェア×転嫁率）"""
         return self.import_share * self.exchange_rate_passthrough
+
+    @property
+    def consumption_drag(self) -> float:
+        """円安による実質所得ドラッグ＝CPI転嫁分(psi_m)×eta"""
+        return self.psi_m * self.eta
 
 
 @dataclass(frozen=True)

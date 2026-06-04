@@ -106,7 +106,7 @@ class DerivedCoefficients:
 
         # 円安による輸入物価上昇のCPI転嫁と実質所得ドラッグ
         exchange_rate_inflation_passthrough = open_economy.psi_m
-        exchange_rate_consumption_drag = open_economy.eta
+        exchange_rate_consumption_drag = open_economy.consumption_drag
 
         return ImpulseCoefficients(
             government_spending_investment_spillover=government_spending_investment_spillover,

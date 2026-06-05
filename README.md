@@ -77,16 +77,20 @@ print(f"産出ピーク効果: {max(y_response) * 100:.2f}%")
 
 Claude Desktopの設定ファイル（`claude_desktop_config.json`）に追加:
 
+`uvx` を使えば事前インストール不要（`uv` のみ必要）:
+
 ```json
 {
   "mcpServers": {
     "jpfs": {
-      "command": "jpfs",
-      "args": ["mcp"]
+      "command": "uvx",
+      "args": ["jpfs", "mcp"]
     }
   }
 }
 ```
+
+詳しい設定方法（インストール済みの場合・開発者向け）は [MCP連携](docs/mcp.md) を参照。
 
 ## ドキュメント
 

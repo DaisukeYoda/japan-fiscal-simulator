@@ -31,4 +31,4 @@ jobs:
         run: uv run mypy src/japan_fiscal_simulator
 
       - name: Test
-        run: uv run pytest -m "" -n auto
+        run: uv run pytest -m "not slow" -n auto

@@ -36,19 +36,36 @@ jobs:
       - name: Type check
         run: uv run mypy src/japan_fiscal_simulator
 
-      - name: Diagnose - profile model solve
+      - name: Diagnose - hybr solver behavior
         run: |
           uv run python -c "
-          import cProfile, pstats, io, time
-          from japan_fiscal_simulator.core.model import DSGEModel
+          import numpy as np
+          from scipy.optimize import root
+          from japan_fiscal_simulator.core.nk_model import NewKeynesianModel
+          from japan_fiscal_simulator.core.solver import BlanchardKahnSolver
           from japan_fiscal_simulator.parameters.defaults import DefaultParameters
-          pr = cProfile.Profile(); pr.enable()
-          m = DSGEModel(DefaultParameters()); _ = m.policy_function
-          pr.disable()
-          s = io.StringIO(); pstats.Stats(pr, stream=s).sort_stats('cumulative').print_stats(25)
-          print(s.getvalue())
-          t = time.time(); m2 = DSGEModel(DefaultParameters()); _ = m2.policy_function
-          print(f'second solve (warm): {time.time() - t:.2f}s')
+
+          model = NewKeynesianModel(DefaultParameters())
+          mats = model._build_system_matrices()
+          s = BlanchardKahnSolver(
+              A=mats.A, B=mats.B, C=mats.C, D=mats.D,
+              n_predetermined=model.vars.n_state,
+              n_forward_looking=int(np.linalg.matrix_rank(mats.A)),
+          )
+          ns, nc = s.n_state, s.n_control
+          I = np.eye(ns)
+          def residual(vec):
+              P = vec[:ns*ns].reshape(ns, ns); R = vec[ns*ns:].reshape(nc, ns)
+              F = np.vstack([I, R])
+              return np.asarray(s.A @ F @ (P @ P) + s.B @ F @ P + s.C @ F, dtype=float).reshape(-1)
+          x0 = s._initial_guess()
+          sol = root(residual, x0=x0, method='hybr', tol=1e-10)
+          err = float(np.linalg.norm(residual(sol.x), ord=np.inf))
+          print('success:', sol.success)
+          print('message:', sol.message)
+          print('err:', err)
+          print('nfev:', sol.nfev)
+          print('x0[:5]:', x0[:5])
           "
 
       - name: Test

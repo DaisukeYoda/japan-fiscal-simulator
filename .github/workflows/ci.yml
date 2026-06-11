@@ -36,21 +36,20 @@ jobs:
       - name: Type check
         run: uv run mypy src/japan_fiscal_simulator
 
-      - name: Diagnose - raw model solve timing
+      - name: Diagnose - profile model solve
         run: |
           uv run python -c "
-          import time
+          import cProfile, pstats, io, time
           from japan_fiscal_simulator.core.model import DSGEModel
           from japan_fiscal_simulator.parameters.defaults import DefaultParameters
-          t = time.time(); m = DSGEModel(DefaultParameters()); _ = m.policy_function
-          print(f'model solve: {time.time() - t:.2f}s')
+          pr = cProfile.Profile(); pr.enable()
+          m = DSGEModel(DefaultParameters()); _ = m.policy_function
+          pr.disable()
+          s = io.StringIO(); pstats.Stats(pr, stream=s).sort_stats('cumulative').print_stats(25)
+          print(s.getvalue())
+          t = time.time(); m2 = DSGEModel(DefaultParameters()); _ = m2.policy_function
+          print(f'second solve (warm): {time.time() - t:.2f}s')
           "
-
-      - name: Diagnose - slow tests solo without xdist
-        run: uv run pytest tests/test_docs.py::TestEstimation::test_make_log_posterior tests/test_data_loader.py -q --durations=5 -p no:cacheprovider
-
-      - name: Diagnose - same tests with xdist
-        run: uv run pytest tests/test_docs.py::TestEstimation::test_make_log_posterior tests/test_data_loader.py -q --durations=5 -n auto
 
       - name: Test
         run: uv run pytest -m "not slow" -n auto

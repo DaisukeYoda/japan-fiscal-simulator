@@ -9,6 +9,12 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      # pytest-xdistのワーカーごとにBLASが全コア分のスレッドを張ると
+      # 競合してテストが極端に遅くなるため、1ワーカー1スレッドに制限する
+      OMP_NUM_THREADS: 1
+      OPENBLAS_NUM_THREADS: 1
+      MKL_NUM_THREADS: 1
     steps:
       - uses: actions/checkout@v4
 

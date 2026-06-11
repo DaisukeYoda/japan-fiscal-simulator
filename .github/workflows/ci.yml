@@ -10,8 +10,8 @@ jobs:
   test:
     runs-on: ubuntu-latest
     env:
-      # pytest-xdistのワーカーごとにBLASが全コア分のスレッドを張ると
-      # 競合してテストが極端に遅くなるため、1ワーカー1スレッドに制限する
+      # pytest-xdistのワーカーごとにBLASが全コア分のスレッドを張る
+      # 過剰購読を予防する（1ワーカー1スレッド）
       OMP_NUM_THREADS: 1
       OPENBLAS_NUM_THREADS: 1
       MKL_NUM_THREADS: 1
@@ -35,16 +35,6 @@ jobs:
 
       - name: Type check
         run: uv run mypy src/japan_fiscal_simulator
-
-      - name: Diagnose - model solve timing with analytic jacobian
-        run: |
-          uv run python -c "
-          import time
-          from japan_fiscal_simulator.core.model import DSGEModel
-          from japan_fiscal_simulator.parameters.defaults import DefaultParameters
-          t = time.time(); m = DSGEModel(DefaultParameters()); _ = m.policy_function
-          print(f'model solve: {time.time() - t:.3f}s')
-          "
 
       - name: Test
         run: uv run pytest -m "not slow" -n auto

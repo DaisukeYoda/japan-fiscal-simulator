@@ -1,5 +1,7 @@
 """資本蓄積と投資方程式のテスト"""
 
+from dataclasses import replace
+
 import numpy as np
 import pytest
 
@@ -257,23 +259,10 @@ class TestNewKeynesianModelExpanded:
         assert irf["rk"][0] > 0
 
     def test_invalid_resource_share_raises(self) -> None:
-        """資源制約シェアが不正な場合は例外を投げる"""
+        """資源制約シェアが不正な場合は生成時に例外を投げる（fail-fast）"""
         params = DefaultParameters()
-        bad_government = params.government.__class__(
-            tau_c=params.government.tau_c,
-            tau_l=params.government.tau_l,
-            tau_k=params.government.tau_k,
-            g_y_ratio=-0.1,
-            b_y_ratio=params.government.b_y_ratio,
-            transfer_y_ratio=params.government.transfer_y_ratio,
-            rho_g=params.government.rho_g,
-            rho_tau=params.government.rho_tau,
-            phi_b=params.government.phi_b,
-        )
-        bad_params = params.with_updates(government=bad_government)
-        model = NewKeynesianModel(bad_params)
         with pytest.raises(ValidationError):
-            _ = model.solution
+            replace(params.government, g_y_ratio=-0.1)
 
 
 class TestDSGEModelExpanded:

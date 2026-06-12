@@ -9,6 +9,12 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      # pytest-xdistのワーカーごとにBLASが全コア分のスレッドを張る
+      # 過剰購読を予防する（1ワーカー1スレッド）
+      OMP_NUM_THREADS: 1
+      OPENBLAS_NUM_THREADS: 1
+      MKL_NUM_THREADS: 1
     steps:
       - uses: actions/checkout@v4
 

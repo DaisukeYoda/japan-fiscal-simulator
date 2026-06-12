@@ -203,8 +203,29 @@ class BlanchardKahnSolver:
             det_residual = self.A @ F @ (P @ P) + self.B @ F @ P + self.C @ F
             return np.asarray(det_residual, dtype=float).reshape(-1)
 
+        # dF/dR の選択行列: F = [I; R] なので dF = S @ dR
+        selector = np.vstack([np.zeros((ns, nc)), np.eye(nc)])
+
+        def jacobian(vec: np.ndarray) -> np.ndarray:
+            # 残差 M = A F P^2 + B F P + C F の解析的ヤコビアン。
+            # 行優先ベクトル化では vec_r(A X B) = (A ⊗ B^T) vec_r(X) を用いて
+            #   dM/dP = (AF) ⊗ P^T + (AFP + BF) ⊗ I
+            #   dM/dR = (AS) ⊗ (P^2)^T + (BS) ⊗ P^T + (CS) ⊗ I
+            # 数値微分のノイズで準ニュートン法が停滞するのを防ぐ。
+            P, R = unpack(vec)
+            F = np.vstack([identity_state, R])
+            AF = self.A @ F
+            BF = self.B @ F
+            J_P = np.kron(AF, P.T) + np.kron(AF @ P + BF, identity_state)
+            J_R = (
+                np.kron(self.A @ selector, (P @ P).T)
+                + np.kron(self.B @ selector, P.T)
+                + np.kron(self.C @ selector, identity_state)
+            )
+            return np.hstack([J_P, J_R])
+
         x0 = self._initial_guess()
-        solution = root(residual, x0=x0, method="hybr", tol=tol)
+        solution = root(residual, x0=x0, jac=jacobian, method="hybr", tol=tol)
         x_candidate = np.asarray(solution.x, dtype=float)
         err = float(np.linalg.norm(residual(x_candidate), ord=np.inf))
         used_fallback = False
@@ -221,6 +242,7 @@ class BlanchardKahnSolver:
                 lsq = least_squares(
                     residual,
                     x0=guess,
+                    jac=jacobian,
                     method="dogbox",
                     ftol=tol,
                     xtol=tol,

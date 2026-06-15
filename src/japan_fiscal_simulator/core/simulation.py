@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from japan_fiscal_simulator.core.exceptions import ShockValidationError, ValidationError
-from japan_fiscal_simulator.core.model import N_SHOCKS, N_VARIABLES, SHOCK_VARS, VARIABLE_INDICES
-from japan_fiscal_simulator.parameters.constants import SIMULATION_LIMITS
+from japan_fiscal_simulator.core.model import N_VARIABLES, SHOCK_VARS, VARIABLE_INDICES
+from japan_fiscal_simulator.parameters.constants import SHOCK_TYPE_CONSTANTS, SIMULATION_LIMITS
 
 if TYPE_CHECKING:
     from japan_fiscal_simulator.core.model import DSGEModel
@@ -20,6 +20,7 @@ class ImpulseResponseResult:
     periods: int
     shock_name: str
     shock_size: float
+    shock_type: str
     responses: dict[str, np.ndarray]  # 変数名 → 応答時系列
 
     def get_response(self, variable: str) -> np.ndarray:
@@ -53,6 +54,7 @@ class ImpulseResponseSimulator:
         shock_name: str,
         shock_size: float = 0.01,
         periods: int = 40,
+        shock_type: str = "temporary",
     ) -> ImpulseResponseResult:
         """インパルス応答をシミュレート
 
@@ -60,18 +62,25 @@ class ImpulseResponseSimulator:
             shock_name: ショック名（'e_a', 'e_g', 'e_m', 'e_tau', 'e_risk', 'e_fx'）
             shock_size: ショックサイズ（デフォルト1%）
             periods: シミュレーション期間
+            shock_type: ショックタイプ（'temporary', 'permanent', 'gradual'）
 
         Returns:
             ImpulseResponseResult
 
         Raises:
-            ShockValidationError: ショック名が無効またはショックサイズが範囲外の場合
+            ShockValidationError: ショック名、ショックサイズ、またはshock_typeが無効な場合
             ValidationError: 期間数が範囲外の場合
         """
         # バリデーション
         if shock_name not in SHOCK_VARS:
             raise ShockValidationError(
                 f"無効なショック名です: '{shock_name}'。有効な値: {SHOCK_VARS}"
+            )
+
+        valid_shock_types = {"temporary", "permanent", "gradual"}
+        if shock_type not in valid_shock_types:
+            raise ShockValidationError(
+                f"無効なショックタイプです: '{shock_type}'。有効な値: {sorted(valid_shock_types)}"
             )
 
         if abs(shock_size) > SIMULATION_LIMITS.max_shock_size:
@@ -88,32 +97,22 @@ class ImpulseResponseSimulator:
 
         policy = self.model.policy_function
         shock_idx = SHOCK_VARS.index(shock_name)
-        shock_persistence = {
-            "e_p": self.model.params.shocks.rho_p,
-        }
-        rho = shock_persistence.get(shock_name)
+
+        # ショック系列を生成
+        epsilon_series = self._build_shock_series(shock_name, shock_size, shock_type, periods)
 
         # 状態変数の時系列
         n_vars = N_VARIABLES
         x_history = np.zeros((periods + 1, n_vars))
 
-        # 初期ショックベクトル
-        epsilon = np.zeros(N_SHOCKS)
-        epsilon[shock_idx] = shock_size
+        # 初期インパクト: x_0 = Q * ε_0
+        x_history[0] = policy.Q[:, shock_idx] * epsilon_series[0]
 
-        # 初期インパクト: x_0 = Q * ε
-        if policy.Q.shape[1] >= N_SHOCKS:
-            x_history[0] = policy.Q[:, :N_SHOCKS] @ epsilon
-        else:
-            x_history[0, : policy.Q.shape[0]] = policy.Q @ epsilon[: policy.Q.shape[1]]
-
-        # 時間発展: x_t = P * x_{t-1}
+        # 時間発展: x_t = P * x_{t-1} + Q * ε_t
         P = policy.P
+        q_col = policy.Q[:, shock_idx]
         for t in range(1, periods + 1):
-            x_history[t] = P @ x_history[t - 1]
-            # 非状態ショックのAR(1)持続性を反映（Phase 3: 価格マークアップ）
-            if rho is not None:
-                x_history[t] += policy.Q[:, shock_idx] * (shock_size * (rho**t))
+            x_history[t] = P @ x_history[t - 1] + q_col * epsilon_series[t]
 
         # 結果を変数名でマッピング（t=0のインパクトを含む）
         responses = {}
@@ -127,63 +126,130 @@ class ImpulseResponseSimulator:
             periods=periods + 1,  # t=0を含む
             shock_name=shock_name,
             shock_size=shock_size,
+            shock_type=shock_type,
             responses=responses,
         )
 
+    def _build_shock_series(
+        self,
+        shock_name: str,
+        shock_size: float,
+        shock_type: str,
+        periods: int,
+    ) -> np.ndarray:
+        """shock_typeに応じたショック系列 ε_t を生成する。
+
+        - temporary: t=0のみショック。その後は非状態ショックについてρ^tで減衰。
+        - permanent: 全期間にわたり同一サイズのショックが継続。
+        - gradual: ランプ期間をかけて線形に到達し、その後維持。
+        """
+        epsilon = np.zeros(periods + 1)
+
+        if shock_type == "temporary":
+            epsilon[0] = shock_size
+            # 非状態ショックのAR(1)持続性を反映（例: 価格マークアップ）
+            rho = self._persistent_non_state_rho(shock_name)
+            if rho is not None:
+                time_idx = np.arange(1, periods + 1)
+                epsilon[1:] = shock_size * (rho**time_idx)
+
+        elif shock_type == "permanent":
+            epsilon[:] = shock_size
+
+        elif shock_type == "gradual":
+            ramp_periods = SHOCK_TYPE_CONSTANTS.default_gradual_ramp_periods
+            time_idx = np.arange(periods + 1)
+            # ランプ期間中は線形に増加、その後は最大値を維持
+            epsilon = np.minimum(time_idx / ramp_periods, 1.0) * shock_size
+
+        return epsilon
+
+    def _persistent_non_state_rho(self, shock_name: str) -> float | None:
+        """状態変数を持たないがAR(1)持続性を持つショックの減衰率を返す。"""
+        if shock_name == "e_p":
+            return self.model.params.shocks.rho_p
+        return None
+
     def simulate_consumption_tax_cut(
-        self, tax_cut: float = 0.02, periods: int = 40
+        self,
+        tax_cut: float = 0.02,
+        periods: int = 40,
+        shock_type: str = "temporary",
     ) -> ImpulseResponseResult:
         """消費税減税のシミュレーション
 
         Args:
             tax_cut: 減税幅（例: 0.02 = 2%pt減税）
             periods: シミュレーション期間
+            shock_type: ショックタイプ
         """
-        return self.simulate("e_tau", shock_size=-tax_cut, periods=periods)
+        return self.simulate("e_tau", shock_size=-tax_cut, periods=periods, shock_type=shock_type)
 
     def simulate_government_spending(
-        self, spending_increase: float = 0.01, periods: int = 40
+        self,
+        spending_increase: float = 0.01,
+        periods: int = 40,
+        shock_type: str = "temporary",
     ) -> ImpulseResponseResult:
         """政府支出増加のシミュレーション
 
         Args:
             spending_increase: 支出増加率（GDP比、例: 0.01 = 1%）
             periods: シミュレーション期間
+            shock_type: ショックタイプ
         """
-        return self.simulate("e_g", shock_size=spending_increase, periods=periods)
+        return self.simulate(
+            "e_g", shock_size=spending_increase, periods=periods, shock_type=shock_type
+        )
 
     def simulate_monetary_shock(
-        self, rate_change: float = 0.0025, periods: int = 40
+        self,
+        rate_change: float = 0.0025,
+        periods: int = 40,
+        shock_type: str = "temporary",
     ) -> ImpulseResponseResult:
         """金融政策ショックのシミュレーション
 
         Args:
             rate_change: 金利変更（例: 0.0025 = 25bp）
             periods: シミュレーション期間
+            shock_type: ショックタイプ
         """
-        return self.simulate("e_m", shock_size=rate_change, periods=periods)
+        return self.simulate("e_m", shock_size=rate_change, periods=periods, shock_type=shock_type)
 
     def simulate_technology_shock(
-        self, productivity_increase: float = 0.01, periods: int = 40
+        self,
+        productivity_increase: float = 0.01,
+        periods: int = 40,
+        shock_type: str = "temporary",
     ) -> ImpulseResponseResult:
         """技術ショックのシミュレーション
 
         Args:
             productivity_increase: 生産性上昇率
             periods: シミュレーション期間
+            shock_type: ショックタイプ
         """
-        return self.simulate("e_a", shock_size=productivity_increase, periods=periods)
+        return self.simulate(
+            "e_a", shock_size=productivity_increase, periods=periods, shock_type=shock_type
+        )
 
     def simulate_yen_depreciation(
-        self, depreciation_rate: float = 0.10, periods: int = 40
+        self,
+        depreciation_rate: float = 0.10,
+        periods: int = 40,
+        shock_type: str = "temporary",
     ) -> ImpulseResponseResult:
         """円安ショックのシミュレーション
 
         Args:
             depreciation_rate: 円安率（例: 0.10 = 10%円安）
             periods: シミュレーション期間
+            shock_type: ショックタイプ
         """
-        return self.simulate("e_fx", shock_size=depreciation_rate, periods=periods)
+        return self.simulate(
+            "e_fx", shock_size=depreciation_rate, periods=periods, shock_type=shock_type
+        )
 
 
 @dataclass

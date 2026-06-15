@@ -87,6 +87,7 @@ class SocialSecurityPolicy:
             shock_name="e_g",
             shock_size=scenario.shock_size,
             periods=scenario.periods,
+            shock_type=scenario.shock_type.value,
         )
 
         y_response = irf.get_response("y")

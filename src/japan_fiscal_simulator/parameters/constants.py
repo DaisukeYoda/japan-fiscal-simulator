@@ -57,9 +57,17 @@ class ParameterLimits:
     max_government_spending_ratio: float = 0.60  # 最大60%
 
 
+@dataclass(frozen=True)
+class ShockTypeConstants:
+    """ショックタイプ関連の定数"""
+
+    default_gradual_ramp_periods: int = 4  # gradualショックのランプ期間（四半期）
+
+
 # デフォルトインスタンス
 SIMULATION_LIMITS = SimulationLimits()
 PARAMETER_LIMITS = ParameterLimits()
+SHOCK_TYPE_CONSTANTS = ShockTypeConstants()
 
 
 @dataclass(frozen=True)

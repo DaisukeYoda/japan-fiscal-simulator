@@ -18,6 +18,7 @@ from japan_fiscal_simulator.cli.commands import (
     steady_state_command,
 )
 from japan_fiscal_simulator.mcp.server import run_server
+from japan_fiscal_simulator.output.schemas import ShockType
 
 app = typer.Typer(
     name="japan-fiscal",
@@ -51,6 +52,10 @@ def simulate(
         Path | None,
         typer.Option("--output", "-o", help="出力ディレクトリ"),
     ] = None,
+    shock_type: Annotated[
+        ShockType,
+        typer.Option("--shock-type", "-t", help="ショックタイプ（temporary, permanent, gradual）"),
+    ] = ShockType.TEMPORARY,
 ) -> None:
     """財政政策シミュレーションを実行
 
@@ -59,7 +64,7 @@ def simulate(
         japan-fiscal simulate government_spending --shock 0.01
         japan-fiscal simulate price_markup --shock 0.01
     """
-    simulate_command(policy_type, shock, periods, graph, output_dir)
+    simulate_command(policy_type, shock, periods, graph, output_dir, shock_type)
 
 
 @app.command("multiplier")

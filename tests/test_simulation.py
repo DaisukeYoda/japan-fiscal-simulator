@@ -145,12 +145,20 @@ class TestImpulseResponseSimulator:
         result = simulator.simulate("e_g", shock_size=0.01, periods=40, shock_type="gradual")
         g_response = result.get_response("g")
 
-        # ランプ期間中（デフォルト4四半期）は単調非減少
-        for t in range(1, 4):
-            assert g_response[t] >= g_response[t - 1] - 1e-12
+        # t=0 はショックゼロから開始
+        assert g_response[0] == 0.0
 
-        # ランプ終了後は目標ショックサイズに到達
-        assert g_response[4] >= g_response[0]
+        # ランプ期間中（デフォルト4四半期）は単調に増加
+        for t in range(1, 4):
+            assert g_response[t] > g_response[t - 1]
+
+        # ランプ完了点（t=4）は t=0 より厳密に大きい
+        assert g_response[4] > g_response[0]
+
+        # ランプ完了後は外生ショックが一定になるため、応答の増分がランプ期間中より縮小する
+        ramp_increment = g_response[4] - g_response[3]
+        post_ramp_increment = g_response[5] - g_response[4]
+        assert post_ramp_increment < ramp_increment
 
     def test_invalid_shock_type(self, simulator: ImpulseResponseSimulator) -> None:
         """無効な shock_type は拒否される"""

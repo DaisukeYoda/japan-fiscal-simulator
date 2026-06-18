@@ -31,6 +31,7 @@ from japan_fiscal_simulator.estimation.results import build_estimation_result
 from japan_fiscal_simulator.mcp.tools import ContextManager
 from japan_fiscal_simulator.output.graphs import GraphGenerator
 from japan_fiscal_simulator.output.reports import ReportGenerator
+from japan_fiscal_simulator.output.schemas import ShockType
 from japan_fiscal_simulator.parameters.calibration import JapanCalibration
 from japan_fiscal_simulator.parameters.defaults import DefaultParameters
 
@@ -123,6 +124,10 @@ def simulate_command(
         Path | None,
         typer.Option("--output", "-o", help="出力ディレクトリ"),
     ] = None,
+    shock_type: Annotated[
+        ShockType,
+        typer.Option("--shock-type", "-t", help="ショックタイプ（temporary, permanent, gradual）"),
+    ] = ShockType.TEMPORARY,
 ) -> None:
     """財政政策シミュレーションを実行"""
     factory = ModelFactoryManager.get()
@@ -157,7 +162,7 @@ def simulate_command(
 
         # シミュレーション実行
         simulator = ImpulseResponseSimulator(model)
-        result = simulator.simulate(shock_name, shock, periods)
+        result = simulator.simulate(shock_name, shock, periods, shock_type=shock_type.value)
 
     # 結果表示
     console.print()
@@ -166,6 +171,7 @@ def simulate_command(
             f"[bold]シミュレーション結果[/bold]\n"
             f"政策タイプ: {policy_type}\n"
             f"ショック: {shock * 100:.1f}%\n"
+            f"ショックタイプ: {shock_type.value}\n"
             f"期間: {periods}四半期",
             title="Japan Fiscal DSGE Simulator",
         )

@@ -614,7 +614,12 @@ class TestMCP:
         result = compare_scenarios(
             scenarios=[
                 {"policy_type": "consumption_tax", "shock_size": -0.02, "name": "減税"},
-                {"policy_type": "government_spending", "shock_size": 0.01, "name": "歳出"},
+                {
+                    "policy_type": "government_spending",
+                    "shock_size": 0.01,
+                    "name": "歳出",
+                    "shock_type": "permanent",
+                },
             ],
             context=context,
         )

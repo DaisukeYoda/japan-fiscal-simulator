@@ -65,6 +65,36 @@ class TestSimulatePolicy:
         with pytest.raises(ShockValidationError):
             simulate_policy("invalid_policy", 0.01, context=ctx)
 
+    def test_shock_type_permanent(self, ctx: SimulationContext) -> None:
+        temporary = simulate_policy(
+            "government_spending", 0.01, periods=20, shock_type="temporary", context=ctx
+        )
+        permanent = simulate_policy(
+            "government_spending", 0.01, periods=20, shock_type="permanent", context=ctx
+        )
+
+        y_temp = temporary["impulse_response"]["variables"]["y"]["values"]
+        y_perm = permanent["impulse_response"]["variables"]["y"]["values"]
+        assert y_temp != y_perm
+        assert permanent["scenario"]["shock_type"] == "permanent"
+
+    def test_shock_type_gradual(self, ctx: SimulationContext) -> None:
+        gradual = simulate_policy(
+            "government_spending", 0.01, periods=20, shock_type="gradual", context=ctx
+        )
+        temporary = simulate_policy(
+            "government_spending", 0.01, periods=20, shock_type="temporary", context=ctx
+        )
+
+        y_grad = gradual["impulse_response"]["variables"]["y"]["values"]
+        y_temp = temporary["impulse_response"]["variables"]["y"]["values"]
+        assert y_grad != y_temp
+        assert gradual["scenario"]["shock_type"] == "gradual"
+
+    def test_invalid_shock_type(self, ctx: SimulationContext) -> None:
+        with pytest.raises(ShockValidationError):
+            simulate_policy("government_spending", 0.01, shock_type="invalid", context=ctx)
+
 
 class TestSetParameters:
     """set_parametersのテスト"""

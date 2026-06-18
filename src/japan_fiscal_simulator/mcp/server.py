@@ -144,6 +144,12 @@ def create_server() -> Server:
                                     "policy_type": {"type": "string"},
                                     "shock_size": {"type": "number"},
                                     "name": {"type": "string"},
+                                    "shock_type": {
+                                        "type": "string",
+                                        "description": "ショックタイプ",
+                                        "enum": ["temporary", "permanent", "gradual"],
+                                        "default": "temporary",
+                                    },
                                 },
                                 "required": ["policy_type", "shock_size"],
                             },

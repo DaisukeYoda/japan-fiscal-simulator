@@ -50,6 +50,27 @@ class TestSimulateCommand:
         result = runner.invoke(app, ["simulate", "yen_depreciation", "--shock", "0.10"])
         assert result.exit_code == 0
 
+    def test_simulate_shock_type_permanent(self) -> None:
+        result = runner.invoke(
+            app,
+            ["simulate", "government_spending", "--shock", "0.01", "--shock-type", "permanent"],
+        )
+        assert result.exit_code == 0
+
+    def test_simulate_shock_type_gradual(self) -> None:
+        result = runner.invoke(
+            app,
+            ["simulate", "government_spending", "--shock", "0.01", "--shock-type", "gradual"],
+        )
+        assert result.exit_code == 0
+
+    def test_simulate_invalid_shock_type(self) -> None:
+        result = runner.invoke(
+            app,
+            ["simulate", "government_spending", "--shock-type", "invalid"],
+        )
+        assert result.exit_code != 0
+
 
 class TestMultiplierCommand:
     """multiplierコマンドのテスト"""

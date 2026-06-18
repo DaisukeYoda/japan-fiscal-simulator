@@ -167,6 +167,7 @@ class DualRateTaxPolicyAnalyzer:
             shock_name="e_tau",
             shock_size=simulation_shock,
             periods=scenario.periods,
+            shock_type=scenario.shock_type.value,
         )
 
         y_response = irf.get_response("y")

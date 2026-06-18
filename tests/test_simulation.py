@@ -3,6 +3,7 @@
 import numpy as np
 import pytest
 
+from japan_fiscal_simulator.core.exceptions import ShockValidationError
 from japan_fiscal_simulator.core.model import DSGEModel
 from japan_fiscal_simulator.core.simulation import (
     FiscalMultiplierCalculator,
@@ -113,6 +114,57 @@ class TestImpulseResponseSimulator:
         assert fx_pi[0] > 0
         assert combined_pi[0] > tax_cut_pi[0]
 
+    def test_shock_type_temporary_vs_permanent(self, simulator: ImpulseResponseSimulator) -> None:
+        """temporary と permanent の IRF は異なる"""
+        temporary = simulator.simulate("e_g", shock_size=0.01, periods=40, shock_type="temporary")
+        permanent = simulator.simulate("e_g", shock_size=0.01, periods=40, shock_type="permanent")
+
+        assert temporary.shock_type == "temporary"
+        assert permanent.shock_type == "permanent"
+
+        y_temp = temporary.get_response("y")
+        y_perm = permanent.get_response("y")
+        assert not np.allclose(y_temp, y_perm, atol=1e-12)
+
+        # permanent は長期にわたり応答が持続（最終期の絶対値が temporary より大きい）
+        assert abs(y_perm[-1]) > abs(y_temp[-1])
+
+    def test_shock_type_temporary_vs_gradual(self, simulator: ImpulseResponseSimulator) -> None:
+        """temporary と gradual の IRF は異なる"""
+        temporary = simulator.simulate("e_g", shock_size=0.01, periods=40, shock_type="temporary")
+        gradual = simulator.simulate("e_g", shock_size=0.01, periods=40, shock_type="gradual")
+
+        assert gradual.shock_type == "gradual"
+
+        y_temp = temporary.get_response("y")
+        y_grad = gradual.get_response("y")
+        assert not np.allclose(y_temp, y_grad, atol=1e-12)
+
+    def test_shock_type_gradual_ramp(self, simulator: ImpulseResponseSimulator) -> None:
+        """gradual の政府支出はランプ期間中に単調に増加する"""
+        result = simulator.simulate("e_g", shock_size=0.01, periods=40, shock_type="gradual")
+        g_response = result.get_response("g")
+
+        # t=0 はショックゼロから開始
+        assert g_response[0] == 0.0
+
+        # ランプ期間中（デフォルト4四半期）は単調に増加
+        for t in range(1, 4):
+            assert g_response[t] > g_response[t - 1]
+
+        # ランプ完了点（t=4）は t=0 より厳密に大きい
+        assert g_response[4] > g_response[0]
+
+        # ランプ完了後は外生ショックが一定になるため、応答の増分がランプ期間中より縮小する
+        ramp_increment = g_response[4] - g_response[3]
+        post_ramp_increment = g_response[5] - g_response[4]
+        assert post_ramp_increment < ramp_increment
+
+    def test_invalid_shock_type(self, simulator: ImpulseResponseSimulator) -> None:
+        """無効な shock_type は拒否される"""
+        with pytest.raises(ShockValidationError):
+            simulator.simulate("e_g", shock_size=0.01, periods=10, shock_type="invalid")
+
 
 class TestFiscalMultiplierCalculator:
     """FiscalMultiplierCalculatorのテスト"""
@@ -158,6 +210,7 @@ class TestImpulseResponseResult:
             periods=4,
             shock_name="e_g",
             shock_size=0.01,
+            shock_type="temporary",
             responses=responses,
         )
 
@@ -171,6 +224,7 @@ class TestImpulseResponseResult:
             periods=4,
             shock_name="e_g",
             shock_size=0.01,
+            shock_type="temporary",
             responses={},
         )
 

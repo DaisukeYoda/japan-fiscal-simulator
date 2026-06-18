@@ -83,6 +83,7 @@ class ConsumptionTaxPolicy:
             shock_name="e_tau",
             shock_size=scenario.shock_size,
             periods=scenario.periods,
+            shock_type=scenario.shock_type.value,
         )
 
         # 産出への効果

@@ -134,7 +134,7 @@ def simulate_policy(
 
     # シミュレーション実行
     simulator = ImpulseResponseSimulator(ctx.model)
-    irf_result = simulator.simulate(shock_name, shock_size, periods)
+    irf_result = simulator.simulate(shock_name, shock_size, periods, shock_type=shock_type)
 
     # 財政乗数計算（該当する場合）
     fiscal_mult = None
@@ -367,6 +367,7 @@ def compare_scenarios(
         result = simulate_policy(
             policy_type=scenario_def["policy_type"],
             shock_size=scenario_def["shock_size"],
+            shock_type=scenario_def.get("shock_type", "temporary"),
             scenario_name=scenario_def.get("name"),
             context=ctx,
         )

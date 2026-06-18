@@ -58,7 +58,7 @@ Claude Desktopの設定ファイル（`claude_desktop_config.json`）にサー�
 | `policy_type` | string | (必須) | `consumption_tax`, `government_spending`, `transfer`, `monetary`, `subsidy`, `price_markup` |
 | `shock_size` | float | (必須) | ショックサイズ |
 | `periods` | int | 40 | シミュレーション期間 |
-| `shock_type` | string | `temporary` | `temporary`, `permanent`, `gradual` |
+| `shock_type` | string | `temporary` | `temporary`, `permanent`, `gradual`。詳細は下記「ショックタイプの定義」を参照 |
 | `scenario_name` | string | null | シナリオ名 |
 
 ### set_parameters
@@ -90,7 +90,7 @@ Claude Desktopの設定ファイル（`claude_desktop_config.json`）にサー�
 
 | パラメータ | 型 | 説明 |
 |-----------|-----|------|
-| `scenarios` | list | シナリオのリスト。各要素は `{"policy_type", "shock_size", "name"}` |
+| `scenarios` | list | シナリオのリスト。各要素は `{"policy_type", "shock_size", "name", "shock_type"}`。`shock_type` は省略時 `temporary` |
 
 ### generate_report
 
@@ -100,6 +100,18 @@ Claude Desktopの設定ファイル（`claude_desktop_config.json`）にサー�
 |-----------|-----|-----------|------|
 | `format` | string | `markdown` | 出力形式 |
 | `include_graphs` | bool | false | グラフを含める |
+
+---
+
+## ショックタイプの定義
+
+`simulate_policy` と `compare_scenarios` の `shock_type` は、政策ショックの時間的な発生パターンを指定する。
+
+| タイプ | 挙動 |
+|--------|------|
+| `temporary` | 期初（t=0）にのみショックが発生。その後はモデル内生的な持続性（状態変数の AR(1) 係数）に従って減衰する。非状態ショック（`e_p` など）は `ρ^t` で減衰。 |
+| `permanent` | 全期間にわたり同一サイズのショックが継続する（`ε_t = shock_size`）。線形化 DSGE の IRF としては「定常状態からの外生的撹動が永続する」ことを表す。大きなショックでは線形化の仮定（定常状態周りの摂動）から逸脱する恐れがあるため、小さなショックでの利用を想定する。 |
+| `gradual` | ランプ期間（デフォルト 4 四半期 = 1 年）をかけてショックサイズに線形に到達し、その後は維持される。t=0 はショックゼロから開始し、`t = ramp_periods` で目標サイズに到達する。 |
 
 ---
 
